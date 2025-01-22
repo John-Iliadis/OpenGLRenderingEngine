@@ -4,12 +4,12 @@
 
 #include "opengl_shader.hpp"
 
-OpenGLShader::OpenGLShader()
+Shader::Shader()
     : mRendererId()
 {
 }
 
-OpenGLShader::OpenGLShader(ShaderList shaderList)
+Shader::Shader(ShaderList shaderList)
 {
     mRendererId = glCreateProgram();
 
@@ -30,7 +30,7 @@ OpenGLShader::OpenGLShader(ShaderList shaderList)
     queryUniforms();
 }
 
-OpenGLShader::~OpenGLShader()
+Shader::~Shader()
 {
     if (mRendererId)
     {
@@ -38,7 +38,7 @@ OpenGLShader::~OpenGLShader()
     }
 }
 
-OpenGLShader::OpenGLShader(OpenGLShader &&other) noexcept
+Shader::Shader(Shader &&other) noexcept
 {
     mRendererId = other.mRendererId;
     mUniformLocationCache.swap(other.mUniformLocationCache);
@@ -46,7 +46,7 @@ OpenGLShader::OpenGLShader(OpenGLShader &&other) noexcept
     other.mRendererId = 0;
 }
 
-OpenGLShader &OpenGLShader::operator=(OpenGLShader &&other) noexcept
+Shader &Shader::operator=(Shader &&other) noexcept
 {
     if (this != &other)
     {
@@ -64,67 +64,67 @@ OpenGLShader &OpenGLShader::operator=(OpenGLShader &&other) noexcept
     return *this;
 }
 
-void OpenGLShader::bind() const
+void Shader::bind() const
 {
     glUseProgram(mRendererId);
 }
 
-void OpenGLShader::unbind() const
+void Shader::unbind() const
 {
     glUseProgram(0);
 }
 
-void OpenGLShader::setInt(const std::string& name, int v0) const
+void Shader::setInt(const std::string& name, int v0) const
 {
     glUniform1i(getUniformLocation(name), v0);
 }
 
-void OpenGLShader::setFloat(const std::string& name, float v0) const
+void Shader::setFloat(const std::string& name, float v0) const
 {
     glUniform1f(getUniformLocation(name), v0);
 }
 
-void OpenGLShader::setFloat2(const std::string& name, float v0, float v1) const
+void Shader::setFloat2(const std::string& name, float v0, float v1) const
 {
     glUniform2f(getUniformLocation(name), v0, v1);
 }
 
-void OpenGLShader::setFloat2(const std::string& name, const glm::vec2 &vec2) const
+void Shader::setFloat2(const std::string& name, const glm::vec2 &vec2) const
 {
     glUniform2f(getUniformLocation(name), vec2.x, vec2.y);
 }
 
-void OpenGLShader::setFloat2(const std::string& name, float v0, float v1, float v2) const
+void Shader::setFloat2(const std::string& name, float v0, float v1, float v2) const
 {
     glUniform3f(getUniformLocation(name), v0, v1, v2);
 }
 
-void OpenGLShader::setFloat3(const std::string& name, const glm::vec3 &vec3) const
+void Shader::setFloat3(const std::string& name, const glm::vec3 &vec3) const
 {
     glUniform3f(getUniformLocation(name), vec3.x, vec3.y, vec3.z);
 }
 
-void OpenGLShader::setFloat4(const std::string& name, float v0, float v1, float v2, float v3) const
+void Shader::setFloat4(const std::string& name, float v0, float v1, float v2, float v3) const
 {
     glUniform4f(getUniformLocation(name), v0, v1, v2, v3);
 }
 
-void OpenGLShader::setFloat4(const std::string& name, const glm::vec4 &vec4) const
+void Shader::setFloat4(const std::string& name, const glm::vec4 &vec4) const
 {
     glUniform4f(getUniformLocation(name), vec4.x, vec4.y, vec4.z, vec4.w);
 }
 
-void OpenGLShader::setMat4(const std::string& name, const glm::mat4 &matrix) const
+void Shader::setMat4(const std::string& name, const glm::mat4 &matrix) const
 {
     glUniformMatrix4fv(getUniformLocation(name), 1, GL_FALSE, glm::value_ptr(matrix));
 }
 
-uint32_t OpenGLShader::id() const
+uint32_t Shader::id() const
 {
     return mRendererId;
 }
 
-std::string OpenGLShader::parseShader(const std::string& path)
+std::string Shader::parseShader(const std::string& path)
 {
     std::ifstream file(path);
     check(file.is_open(), "Failed to open shader file.");
@@ -135,7 +135,7 @@ std::string OpenGLShader::parseShader(const std::string& path)
     return oss.str();
 }
 
-uint32_t OpenGLShader::compileShader(uint32_t type, const std::string& shaderSrc)
+uint32_t Shader::compileShader(uint32_t type, const std::string& shaderSrc)
 {
     uint32_t shaderId = glCreateShader(type);
 
@@ -146,7 +146,7 @@ uint32_t OpenGLShader::compileShader(uint32_t type, const std::string& shaderSrc
     return shaderId;
 }
 
-void OpenGLShader::queryUniforms()
+void Shader::queryUniforms()
 {
     int uniformCount;
     glGetProgramiv(mRendererId, GL_ACTIVE_UNIFORMS, &uniformCount);
@@ -159,7 +159,7 @@ void OpenGLShader::queryUniforms()
     }
 }
 
-int OpenGLShader::getUniformLocation(const std::string& name) const
+int Shader::getUniformLocation(const std::string& name) const
 {
     if (mUniformLocationCache.contains(name))
         return mUniformLocationCache.at(name);

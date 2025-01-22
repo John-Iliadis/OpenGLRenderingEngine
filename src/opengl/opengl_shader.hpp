@@ -13,18 +13,18 @@
 using ShaderPath = std::string;
 using ShaderList = std::initializer_list<std::pair<GLenum, ShaderPath>>;
 
-class OpenGLShader
+class Shader
 {
 public:
-    OpenGLShader();
-    OpenGLShader(ShaderList shaderList);
-    ~OpenGLShader();
+    Shader();
+    Shader(ShaderList shaderList);
+    ~Shader();
 
-    OpenGLShader(OpenGLShader&& other) noexcept;
-    OpenGLShader& operator=(OpenGLShader&& other) noexcept;
+    Shader(Shader&& other) noexcept;
+    Shader& operator=(Shader&& other) noexcept;
 
-    OpenGLShader(const OpenGLShader&) = delete;
-    OpenGLShader& operator=(const OpenGLShader&) = delete;
+    Shader(const Shader&) = delete;
+    Shader& operator=(const Shader&) = delete;
 
     void bind() const;
     void unbind() const;

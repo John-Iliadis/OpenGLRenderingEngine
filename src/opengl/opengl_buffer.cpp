@@ -16,69 +16,69 @@ VertexAttribute::VertexAttribute(uint32_t index, uint32_t count, GLenum type, ui
 
 // -- OpenGLVertexBufferLayout -- //
 
-OpenGLVertexBufferLayout::OpenGLVertexBufferLayout()
+VertexBufferLayout::VertexBufferLayout()
     : mStride()
     , mStepRate(StepRate::Vertex)
 {
 }
 
-OpenGLVertexBufferLayout::OpenGLVertexBufferLayout(uint32_t stride, StepRate stepRate, std::initializer_list<VertexAttribute> attributes)
+VertexBufferLayout::VertexBufferLayout(uint32_t stride, StepRate stepRate, std::initializer_list<VertexAttribute> attributes)
     : mStride(stride)
     , mStepRate(stepRate)
     , mAttributes(attributes)
 {
 }
 
-void OpenGLVertexBufferLayout::setStride(uint32_t stride)
+void VertexBufferLayout::setStride(uint32_t stride)
 {
     mStride = stride;
 }
 
-void OpenGLVertexBufferLayout::setStepRate(StepRate stepRate)
+void VertexBufferLayout::setStepRate(StepRate stepRate)
 {
     mStepRate = stepRate;
 }
 
-void OpenGLVertexBufferLayout::addAttribute(uint32_t index, uint32_t count, GLenum type, uint32_t offset)
+void VertexBufferLayout::addAttribute(uint32_t index, uint32_t count, GLenum type, uint32_t offset)
 {
     mAttributes.emplace_back(index, count, type, offset);
 }
 
-uint32_t OpenGLVertexBufferLayout::stride() const
+uint32_t VertexBufferLayout::stride() const
 {
     return mStride;
 }
 
-uint32_t OpenGLVertexBufferLayout::stepRate() const
+uint32_t VertexBufferLayout::stepRate() const
 {
     return static_cast<uint32_t>(mStepRate);
 }
 
-const std::vector<VertexAttribute> &OpenGLVertexBufferLayout::attributes() const
+const std::vector<VertexAttribute> &VertexBufferLayout::attributes() const
 {
     return mAttributes;
 }
 
 // -- OpenGLVertexBuffer -- //
 
-OpenGLVertexBuffer::OpenGLVertexBuffer()
+VertexBuffer::VertexBuffer()
     : mRendererID()
 {
 }
 
-OpenGLVertexBuffer::OpenGLVertexBuffer(GLenum usage, uint32_t size, const void* data)
+VertexBuffer::VertexBuffer(GLenum usage, uint32_t size, const void* data)
     : mSize(size)
 {
     glCreateBuffers(1, &mRendererID);
     glNamedBufferData(mRendererID, size, data, usage);
 }
 
-OpenGLVertexBuffer::~OpenGLVertexBuffer()
+VertexBuffer::~VertexBuffer()
 {
     glDeleteBuffers(1, &mRendererID);
 }
 
-OpenGLVertexBuffer::OpenGLVertexBuffer(OpenGLVertexBuffer &&other) noexcept
+VertexBuffer::VertexBuffer(VertexBuffer &&other) noexcept
 {
     mRendererID = other.mRendererID;
     mSize = other.mSize;
@@ -87,7 +87,7 @@ OpenGLVertexBuffer::OpenGLVertexBuffer(OpenGLVertexBuffer &&other) noexcept
     other.mSize = 0;
 }
 
-OpenGLVertexBuffer &OpenGLVertexBuffer::operator=(OpenGLVertexBuffer &&other) noexcept
+VertexBuffer &VertexBuffer::operator=(VertexBuffer &&other) noexcept
 {
     if (this != &other)
     {
@@ -103,52 +103,52 @@ OpenGLVertexBuffer &OpenGLVertexBuffer::operator=(OpenGLVertexBuffer &&other) no
     return *this;
 }
 
-void OpenGLVertexBuffer::update(uint32_t offset, uint32_t size, const void *data)
+void VertexBuffer::update(uint32_t offset, uint32_t size, const void *data)
 {
     glNamedBufferSubData(mRendererID, offset, size, data);
 }
 
-void OpenGLVertexBuffer::bind() const
+void VertexBuffer::bind() const
 {
     glBindBuffer(GL_ARRAY_BUFFER, mRendererID);
 }
 
-void OpenGLVertexBuffer::unbind() const
+void VertexBuffer::unbind() const
 {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-uint32_t OpenGLVertexBuffer::id() const
+uint32_t VertexBuffer::id() const
 {
     return mRendererID;
 }
 
-uint32_t OpenGLVertexBuffer::size() const
+uint32_t VertexBuffer::size() const
 {
     return mSize;
 }
 
 // -- OpenGLIndexBuffer -- //
 
-OpenGLIndexBuffer::OpenGLIndexBuffer()
+IndexBuffer::IndexBuffer()
     : mRendererID()
     , mCount()
 {
 }
 
-OpenGLIndexBuffer::OpenGLIndexBuffer(uint32_t count, const void *data)
+IndexBuffer::IndexBuffer(uint32_t count, const void *data)
     : mCount(count)
 {
     glCreateBuffers(1, &mRendererID);
     glNamedBufferData(mRendererID, count * sizeof(uint32_t), data, GL_STATIC_DRAW);
 }
 
-OpenGLIndexBuffer::~OpenGLIndexBuffer()
+IndexBuffer::~IndexBuffer()
 {
     glDeleteBuffers(1, &mRendererID);
 }
 
-OpenGLIndexBuffer::OpenGLIndexBuffer(OpenGLIndexBuffer &&other) noexcept
+IndexBuffer::IndexBuffer(IndexBuffer &&other) noexcept
 {
     mRendererID = other.mRendererID;
     mCount = other.mCount;
@@ -157,7 +157,7 @@ OpenGLIndexBuffer::OpenGLIndexBuffer(OpenGLIndexBuffer &&other) noexcept
     other.mCount = 0;
 }
 
-OpenGLIndexBuffer &OpenGLIndexBuffer::operator=(OpenGLIndexBuffer &&other) noexcept
+IndexBuffer &IndexBuffer::operator=(IndexBuffer &&other) noexcept
 {
     if (this != &other)
     {
@@ -173,50 +173,50 @@ OpenGLIndexBuffer &OpenGLIndexBuffer::operator=(OpenGLIndexBuffer &&other) noexc
     return *this;
 }
 
-void OpenGLIndexBuffer::update(uint32_t offset, uint32_t size, const void *data)
+void IndexBuffer::update(uint32_t offset, uint32_t size, const void *data)
 {
     glNamedBufferSubData(mRendererID, offset, size, data);
 }
 
-void OpenGLIndexBuffer::bind() const
+void IndexBuffer::bind() const
 {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mRendererID);
 }
 
-void OpenGLIndexBuffer::unbind() const
+void IndexBuffer::unbind() const
 {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
-uint32_t OpenGLIndexBuffer::id() const
+uint32_t IndexBuffer::id() const
 {
     return mRendererID;
 }
 
-uint32_t OpenGLIndexBuffer::count() const
+uint32_t IndexBuffer::count() const
 {
     return mCount;
 }
 
 // -- OpenGLVertexArray -- //
 
-OpenGLVertexArray::OpenGLVertexArray()
+VertexArray::VertexArray()
 {
     glCreateVertexArrays(1, &mRendererID);
 }
 
-OpenGLVertexArray::~OpenGLVertexArray()
+VertexArray::~VertexArray()
 {
     glDeleteVertexArrays(1, &mRendererID);
 }
 
-OpenGLVertexArray::OpenGLVertexArray(OpenGLVertexArray &&other) noexcept
+VertexArray::VertexArray(VertexArray &&other) noexcept
 {
     mRendererID = other.mRendererID;
     other.mRendererID = 0;
 }
 
-OpenGLVertexArray &OpenGLVertexArray::operator=(OpenGLVertexArray &&other) noexcept
+VertexArray &VertexArray::operator=(VertexArray &&other) noexcept
 {
     if (this != &other)
     {
@@ -230,7 +230,7 @@ OpenGLVertexArray &OpenGLVertexArray::operator=(OpenGLVertexArray &&other) noexc
 }
 
 // todo: check if this is right
-void OpenGLVertexArray::attachVertexBuffer(const OpenGLVertexBuffer &vertexBuffer, const OpenGLVertexBufferLayout &layout, uint32_t bindingIndex)
+void VertexArray::attachVertexBuffer(const VertexBuffer &vertexBuffer, const VertexBufferLayout &layout, uint32_t bindingIndex)
 {
     glVertexArrayVertexBuffer(mRendererID, bindingIndex, vertexBuffer.id(), 0, layout.stride());
     glVertexArrayBindingDivisor(mRendererID, bindingIndex, layout.stepRate());
@@ -248,22 +248,22 @@ void OpenGLVertexArray::attachVertexBuffer(const OpenGLVertexBuffer &vertexBuffe
     }
 }
 
-void OpenGLVertexArray::attachIndexBuffer(const OpenGLIndexBuffer &indexBuffer)
+void VertexArray::attachIndexBuffer(const IndexBuffer &indexBuffer)
 {
     glVertexArrayElementBuffer(mRendererID, indexBuffer.id());
 }
 
-void OpenGLVertexArray::bind() const
+void VertexArray::bind() const
 {
     glBindVertexArray(mRendererID);
 }
 
-void OpenGLVertexArray::unbind() const
+void VertexArray::unbind() const
 {
     glBindVertexArray(0);
 }
 
-uint32_t OpenGLVertexArray::id() const
+uint32_t VertexArray::id() const
 {
     return mRendererID;
 }

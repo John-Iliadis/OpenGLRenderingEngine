@@ -4,23 +4,23 @@
 
 #include "opengl_framebuffer.hpp"
 
-OpenGLFramebuffer::OpenGLFramebuffer()
+Framebuffer::Framebuffer()
 {
     glCreateFramebuffers(1, &mRendererID);
 }
 
-OpenGLFramebuffer::~OpenGLFramebuffer()
+Framebuffer::~Framebuffer()
 {
     glDeleteFramebuffers(1, &mRendererID);
 }
 
-OpenGLFramebuffer::OpenGLFramebuffer(OpenGLFramebuffer &&other) noexcept
+Framebuffer::Framebuffer(Framebuffer &&other) noexcept
 {
     mRendererID = other.mRendererID;
     other.mRendererID = 0;
 }
 
-OpenGLFramebuffer &OpenGLFramebuffer::operator=(OpenGLFramebuffer &&other) noexcept
+Framebuffer &Framebuffer::operator=(Framebuffer &&other) noexcept
 {
     if (this != &other)
     {
@@ -33,37 +33,37 @@ OpenGLFramebuffer &OpenGLFramebuffer::operator=(OpenGLFramebuffer &&other) noexc
     return *this;
 }
 
-void OpenGLFramebuffer::bind() const
+void Framebuffer::bind() const
 {
     glBindFramebuffer(GL_FRAMEBUFFER, mRendererID);
 }
 
-void OpenGLFramebuffer::unbind() const
+void Framebuffer::unbind() const
 {
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-uint32_t OpenGLFramebuffer::id() const
+uint32_t Framebuffer::id() const
 {
     return mRendererID;
 }
 
-void OpenGLFramebuffer::addColorAttachment(const OpenGLTexture &texture, uint32_t index)
+void Framebuffer::addColorAttachment(const Texture &texture, uint32_t index)
 {
     glNamedFramebufferTexture(mRendererID, GL_COLOR_ATTACHMENT0 + index, texture.id(), 0);
 }
 
-void OpenGLFramebuffer::addDepthAttachment(const OpenGLTexture &texture)
+void Framebuffer::addDepthAttachment(const Texture &texture)
 {
     glNamedFramebufferTexture(mRendererID, GL_DEPTH_ATTACHMENT, texture.id(), 0);
 }
 
-void OpenGLFramebuffer::addDepthStencilAttachment(const OpenGLTexture2D &texture)
+void Framebuffer::addDepthStencilAttachment(const Texture2D &texture)
 {
     glNamedFramebufferTexture(mRendererID, GL_DEPTH_STENCIL_ATTACHMENT, texture.id(), 0);
 }
 
-void OpenGLFramebuffer::setDrawBuffers(const std::initializer_list<uint32_t> drawBufferIndices)
+void Framebuffer::setDrawBuffers(const std::initializer_list<uint32_t> drawBufferIndices)
 {
     bind();
 
@@ -76,7 +76,7 @@ void OpenGLFramebuffer::setDrawBuffers(const std::initializer_list<uint32_t> dra
     unbind();
 }
 
-void OpenGLFramebuffer::setDepthStencilOnly(bool depthStencilOnly)
+void Framebuffer::setDepthStencilOnly(bool depthStencilOnly)
 {
     bind();
 

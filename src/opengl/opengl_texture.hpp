@@ -64,18 +64,18 @@ std::shared_ptr<uint8_t> loadImageHDR(const std::string& imagePath, int32_t* wid
 
 int32_t getRequiredChannels(TextureFormat format);
 
-class OpenGLTexture
+class Texture
 {
 public:
-    OpenGLTexture();
-    OpenGLTexture(const TextureSpecification& spec);
-    virtual ~OpenGLTexture();
+    Texture();
+    Texture(const TextureSpecification& spec);
+    virtual ~Texture();
 
-    OpenGLTexture(const OpenGLTexture&) = delete;
-    OpenGLTexture& operator=(const OpenGLTexture&) = delete;
+    Texture(const Texture&) = delete;
+    Texture& operator=(const Texture&) = delete;
 
-    OpenGLTexture(OpenGLTexture&& other) noexcept;
-    OpenGLTexture& operator=(OpenGLTexture&& other) noexcept;
+    Texture(Texture&& other) noexcept;
+    Texture& operator=(Texture&& other) noexcept;
 
     void bind(uint32_t unit);
     void unbind(uint32_t unit);
@@ -89,13 +89,13 @@ protected:
     TextureSpecification mSpecification;
 };
 
-class OpenGLTexture2D : public OpenGLTexture
+class Texture2D : public Texture
 {
 public:
-    OpenGLTexture2D() = default;
-    OpenGLTexture2D(const TextureSpecification& spec);
-    OpenGLTexture2D(const TextureSpecification& spec, const void* textureData);
-    OpenGLTexture2D(const TextureSpecification& spec, const std::string& texturePath);
+    Texture2D() = default;
+    Texture2D(const TextureSpecification& spec);
+    Texture2D(const TextureSpecification& spec, const void* textureData);
+    Texture2D(const TextureSpecification& spec, const std::string& texturePath);
 
     void resize(int32_t width, int32_t height);
 
@@ -104,11 +104,11 @@ private:
     void uploadTextureData(const void* textureData);
 };
 
-class OpenGLTexture2DMultisample : public OpenGLTexture
+class Texture2DMultisample : public Texture
 {
 public:
-    OpenGLTexture2DMultisample() = default;
-    OpenGLTexture2DMultisample(const TextureSpecification& spec, int32_t sampleCount);
+    Texture2DMultisample() = default;
+    Texture2DMultisample(const TextureSpecification& spec, int32_t sampleCount);
 
     void resize(int32_t width, int32_t height);
 
@@ -117,13 +117,13 @@ private:
     int32_t mSampleCount;
 };
 
-class OpenGLTextureCube : public OpenGLTexture
+class TextureCube : public Texture
 {
 public:
-    OpenGLTextureCube() = default;
-    OpenGLTextureCube(const TextureSpecification& spec);
-    OpenGLTextureCube(const TextureSpecification& spec, const void** textureData);
-    OpenGLTextureCube(const TextureSpecification& spec, const std::array<std::string, 6>& texturePaths);
+    TextureCube() = default;
+    TextureCube(const TextureSpecification& spec);
+    TextureCube(const TextureSpecification& spec, const void** textureData);
+    TextureCube(const TextureSpecification& spec, const std::array<std::string, 6>& texturePaths);
 
 private:
     void create();

@@ -23,11 +23,11 @@ enum class StepRate : uint32_t
     Instance = 1
 };
 
-class OpenGLVertexBufferLayout
+class VertexBufferLayout
 {
 public:
-    OpenGLVertexBufferLayout();
-    OpenGLVertexBufferLayout(uint32_t stride, StepRate stepRate, std::initializer_list<VertexAttribute> attributes);
+    VertexBufferLayout();
+    VertexBufferLayout(uint32_t stride, StepRate stepRate, std::initializer_list<VertexAttribute> attributes);
 
     void setStride(uint32_t stride);
     void setStepRate(StepRate stepRate);
@@ -43,18 +43,18 @@ private:
     std::vector<VertexAttribute> mAttributes;
 };
 
-class OpenGLVertexBuffer
+class VertexBuffer
 {
 public:
-    OpenGLVertexBuffer();
-    OpenGLVertexBuffer(GLenum usage, uint32_t size, const void* data);
-    ~OpenGLVertexBuffer();
+    VertexBuffer();
+    VertexBuffer(GLenum usage, uint32_t size, const void* data);
+    ~VertexBuffer();
 
-    OpenGLVertexBuffer(OpenGLVertexBuffer&& other) noexcept;
-    OpenGLVertexBuffer& operator=(OpenGLVertexBuffer&& other) noexcept;
+    VertexBuffer(VertexBuffer&& other) noexcept;
+    VertexBuffer& operator=(VertexBuffer&& other) noexcept;
 
-    OpenGLVertexBuffer(const OpenGLVertexBuffer&) = delete;
-    OpenGLVertexBuffer& operator=(const OpenGLVertexBuffer&) = delete;
+    VertexBuffer(const VertexBuffer&) = delete;
+    VertexBuffer& operator=(const VertexBuffer&) = delete;
 
     void update(uint32_t offset, uint32_t size, const void* data);
 
@@ -69,18 +69,18 @@ private:
     uint32_t mSize;
 };
 
-class OpenGLIndexBuffer
+class IndexBuffer
 {
 public:
-    OpenGLIndexBuffer();
-    OpenGLIndexBuffer(uint32_t count, const void* data);
-    ~OpenGLIndexBuffer();
+    IndexBuffer();
+    IndexBuffer(uint32_t count, const void* data);
+    ~IndexBuffer();
 
-    OpenGLIndexBuffer(OpenGLIndexBuffer&& other) noexcept;
-    OpenGLIndexBuffer& operator=(OpenGLIndexBuffer&& other) noexcept;
+    IndexBuffer(IndexBuffer&& other) noexcept;
+    IndexBuffer& operator=(IndexBuffer&& other) noexcept;
 
-    OpenGLIndexBuffer(const OpenGLIndexBuffer&) = delete;
-    OpenGLIndexBuffer& operator=(const OpenGLIndexBuffer&) = delete;
+    IndexBuffer(const IndexBuffer&) = delete;
+    IndexBuffer& operator=(const IndexBuffer&) = delete;
 
     void update(uint32_t offset, uint32_t size, const void *data);
 
@@ -95,20 +95,20 @@ private:
     uint32_t mCount;
 };
 
-class OpenGLVertexArray
+class VertexArray
 {
 public:
-    OpenGLVertexArray();
-    ~OpenGLVertexArray();
+    VertexArray();
+    ~VertexArray();
 
-    OpenGLVertexArray(OpenGLVertexArray&& other) noexcept;
-    OpenGLVertexArray& operator=(OpenGLVertexArray&& other) noexcept;
+    VertexArray(VertexArray&& other) noexcept;
+    VertexArray& operator=(VertexArray&& other) noexcept;
 
-    OpenGLVertexArray(const OpenGLVertexArray&) = delete;
-    OpenGLVertexArray& operator=(const OpenGLVertexArray&) = delete;
+    VertexArray(const VertexArray&) = delete;
+    VertexArray& operator=(const VertexArray&) = delete;
 
-    void attachVertexBuffer(const OpenGLVertexBuffer& vertexBuffer, const OpenGLVertexBufferLayout& layout, uint32_t bindingIndex);
-    void attachIndexBuffer(const OpenGLIndexBuffer& indexBuffer);
+    void attachVertexBuffer(const VertexBuffer& vertexBuffer, const VertexBufferLayout& layout, uint32_t bindingIndex);
+    void attachIndexBuffer(const IndexBuffer& indexBuffer);
 
     void bind() const;
     void unbind() const;

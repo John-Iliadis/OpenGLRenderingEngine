@@ -102,30 +102,30 @@ int32_t getRequiredChannels(TextureFormat format)
 
 // -- OpenGLTexture -- //
 
-OpenGLTexture::OpenGLTexture()
+Texture::Texture()
     : mRendererID()
     , mSpecification()
 {
 }
 
-OpenGLTexture::OpenGLTexture(const TextureSpecification &spec)
+Texture::Texture(const TextureSpecification &spec)
     : mRendererID()
     , mSpecification(spec)
 {
 }
 
-OpenGLTexture::~OpenGLTexture()
+Texture::~Texture()
 {
     glDeleteTextures(1, &mRendererID);
 }
 
-OpenGLTexture::OpenGLTexture(OpenGLTexture &&other) noexcept
+Texture::Texture(Texture &&other) noexcept
 {
     std::swap(mRendererID, other.mRendererID);
     std::swap(mSpecification, other.mSpecification);
 }
 
-OpenGLTexture &OpenGLTexture::operator=(OpenGLTexture &&other) noexcept
+Texture &Texture::operator=(Texture &&other) noexcept
 {
     if (this != &other)
     {
@@ -138,48 +138,48 @@ OpenGLTexture &OpenGLTexture::operator=(OpenGLTexture &&other) noexcept
     return *this;
 }
 
-void OpenGLTexture::bind(uint32_t unit)
+void Texture::bind(uint32_t unit)
 {
     glBindTextureUnit(unit, mRendererID);
 }
 
-void OpenGLTexture::unbind(uint32_t unit)
+void Texture::unbind(uint32_t unit)
 {
     glBindTextureUnit(unit, 0);
 }
 
-uint32_t OpenGLTexture::id() const
+uint32_t Texture::id() const
 {
     return mRendererID;
 }
 
-int32_t OpenGLTexture::width() const
+int32_t Texture::width() const
 {
     return mSpecification.width;
 }
 
-int32_t OpenGLTexture::height() const
+int32_t Texture::height() const
 {
     return mSpecification.height;
 }
 
 // -- OpenGLTexture2D -- //
 
-OpenGLTexture2D::OpenGLTexture2D(const TextureSpecification &spec)
-    : OpenGLTexture(spec)
+Texture2D::Texture2D(const TextureSpecification &spec)
+    : Texture(spec)
 {
     create();
 }
 
-OpenGLTexture2D::OpenGLTexture2D(const TextureSpecification &spec, const void *textureData)
-    : OpenGLTexture(spec)
+Texture2D::Texture2D(const TextureSpecification &spec, const void *textureData)
+    : Texture(spec)
 {
     create();
     uploadTextureData(textureData);
 }
 
-OpenGLTexture2D::OpenGLTexture2D(const TextureSpecification &spec, const std::string &texturePath)
-    : OpenGLTexture(spec)
+Texture2D::Texture2D(const TextureSpecification &spec, const std::string &texturePath)
+    : Texture(spec)
 {
     int32_t requiredChannels = getRequiredChannels(mSpecification.format);
 
@@ -193,7 +193,7 @@ OpenGLTexture2D::OpenGLTexture2D(const TextureSpecification &spec, const std::st
     uploadTextureData(textureData.get());
 }
 
-void OpenGLTexture2D::resize(int32_t width, int32_t height)
+void Texture2D::resize(int32_t width, int32_t height)
 {
     mSpecification.width = width;
     mSpecification.height = height;
@@ -203,7 +203,7 @@ void OpenGLTexture2D::resize(int32_t width, int32_t height)
     create();
 }
 
-void OpenGLTexture2D::create()
+void Texture2D::create()
 {
     glCreateTextures(GL_TEXTURE_2D, 1, &mRendererID);
     glTextureParameteri(mRendererID, GL_TEXTURE_WRAP_S, toGLenum(mSpecification.wrapMode));
@@ -229,7 +229,7 @@ void OpenGLTexture2D::create()
                        mSpecification.height);
 }
 
-void OpenGLTexture2D::uploadTextureData(const void *textureData)
+void Texture2D::uploadTextureData(const void *textureData)
 {
     glTextureSubImage2D(mRendererID,
                         0,
@@ -243,8 +243,8 @@ void OpenGLTexture2D::uploadTextureData(const void *textureData)
 
 // -- OpenGLTexture2DMultisample -- //
 
-OpenGLTexture2DMultisample::OpenGLTexture2DMultisample(const TextureSpecification &spec, int32_t sampleCount)
-    : OpenGLTexture(spec)
+Texture2DMultisample::Texture2DMultisample(const TextureSpecification &spec, int32_t sampleCount)
+    : Texture(spec)
 {
     int32_t maxSamples;
     glGetIntegerv(GL_MAX_SAMPLES, &maxSamples);
@@ -253,7 +253,7 @@ OpenGLTexture2DMultisample::OpenGLTexture2DMultisample(const TextureSpecificatio
     create();
 }
 
-void OpenGLTexture2DMultisample::resize(int32_t width, int32_t height)
+void Texture2DMultisample::resize(int32_t width, int32_t height)
 {
     mSpecification.width = width;
     mSpecification.height = height;
@@ -263,7 +263,7 @@ void OpenGLTexture2DMultisample::resize(int32_t width, int32_t height)
     create();
 }
 
-void OpenGLTexture2DMultisample::create()
+void Texture2DMultisample::create()
 {
     glCreateTextures(GL_TEXTURE_2D_MULTISAMPLE, 1, &mRendererID);
     glTextureStorage2DMultisample(mRendererID,
@@ -276,22 +276,22 @@ void OpenGLTexture2DMultisample::create()
 
 // -- OpenGLTextureCube -- //
 
-OpenGLTextureCube::OpenGLTextureCube(const TextureSpecification &spec)
-    : OpenGLTexture(spec)
+TextureCube::TextureCube(const TextureSpecification &spec)
+    : Texture(spec)
 {
     create();
 }
 
-OpenGLTextureCube::OpenGLTextureCube(const TextureSpecification &spec, const void **textureData)
-    : OpenGLTextureCube(spec)
+TextureCube::TextureCube(const TextureSpecification &spec, const void **textureData)
+    : TextureCube(spec)
 {
     create();
     for (int32_t i = 0; i < 6; ++i)
         uploadTextureData(i, textureData[i]);
 }
 
-OpenGLTextureCube::OpenGLTextureCube(const TextureSpecification &spec, const std::array<std::string, 6> &texturePaths)
-    : OpenGLTexture(spec)
+TextureCube::TextureCube(const TextureSpecification &spec, const std::array<std::string, 6> &texturePaths)
+    : Texture(spec)
 {
     create();
 
@@ -308,7 +308,7 @@ OpenGLTextureCube::OpenGLTextureCube(const TextureSpecification &spec, const std
     }
 }
 
-void OpenGLTextureCube::create()
+void TextureCube::create()
 {
     glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &mRendererID);
     glTextureParameteri(mRendererID, GL_TEXTURE_WRAP_S, toGLenum(mSpecification.wrapMode));
@@ -335,7 +335,7 @@ void OpenGLTextureCube::create()
                        mSpecification.height);
 }
 
-void OpenGLTextureCube::uploadTextureData(int32_t faceIndex, const void* textureData)
+void TextureCube::uploadTextureData(int32_t faceIndex, const void* textureData)
 {
     glTextureSubImage3D(mRendererID,
                         0,

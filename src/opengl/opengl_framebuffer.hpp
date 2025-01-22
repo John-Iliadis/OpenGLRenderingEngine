@@ -8,24 +8,24 @@
 #include <glad/glad.h>
 #include "opengl_texture.hpp"
 
-class OpenGLFramebuffer
+class Framebuffer
 {
 public:
-    OpenGLFramebuffer();
-    ~OpenGLFramebuffer();
+    Framebuffer();
+    ~Framebuffer();
 
-    OpenGLFramebuffer(OpenGLFramebuffer&& other) noexcept;
-    OpenGLFramebuffer& operator=(OpenGLFramebuffer&& other) noexcept;
+    Framebuffer(Framebuffer&& other) noexcept;
+    Framebuffer& operator=(Framebuffer&& other) noexcept;
 
-    OpenGLFramebuffer(const OpenGLFramebuffer&) = delete;
-    OpenGLFramebuffer& operator=(const OpenGLFramebuffer&) = delete;
+    Framebuffer(const Framebuffer&) = delete;
+    Framebuffer& operator=(const Framebuffer&) = delete;
 
     void bind() const;
     void unbind() const;
 
-    void addColorAttachment(const OpenGLTexture& texture, uint32_t index);
-    void addDepthAttachment(const OpenGLTexture& texture);
-    void addDepthStencilAttachment(const OpenGLTexture2D& texture);
+    void addColorAttachment(const Texture& texture, uint32_t index);
+    void addDepthAttachment(const Texture& texture);
+    void addDepthStencilAttachment(const Texture2D& texture);
 
     void setDrawBuffers(const std::initializer_list<uint32_t> drawBufferIndices);
     void setDepthStencilOnly(bool depthStencilOnly);
