@@ -2,8 +2,8 @@
 // Created by Gianni on 22/01/2025.
 //
 
-#ifndef OPENGLRENDERINGENGINE_OPEN_GL_SHADER_HPP
-#define OPENGLRENDERINGENGINE_OPEN_GL_SHADER_HPP
+#ifndef OPENGLRENDERINGENGINE_OPENGL_SHADER_HPP
+#define OPENGLRENDERINGENGINE_OPENGL_SHADER_HPP
 
 #include <glad/glad.h>
 #include <glm/glm.hpp>
@@ -52,4 +52,4 @@ private:
     std::unordered_map<std::string, int> mUniformLocationCache;
 };
 
-#endif //OPENGLRENDERINGENGINE_OPEN_GL_SHADER_HPP
+#endif //OPENGLRENDERINGENGINE_OPENGL_SHADER_HPP

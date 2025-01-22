@@ -28,4 +28,5 @@
 #include <future>
 #include <mutex>
 
+#include <cassert>
 #include <stdexcept>

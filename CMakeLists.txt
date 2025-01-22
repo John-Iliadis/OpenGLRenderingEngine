@@ -33,8 +33,12 @@ add_executable(${PROJECT_NAME}
         src/renderer/camera.cpp
         src/opengl/opengl_imgui.cpp
         src/opengl/opengl_imgui.hpp
-        src/opengl/open_gl_shader.cpp
-        src/opengl/open_gl_shader.hpp
+        src/opengl/opengl_shader.cpp
+        src/opengl/opengl_shader.hpp
+        src/opengl/opengl_texture2D.cpp
+        src/opengl/opengl_texture2D.hpp
+        src/opengl/opengl_texture.cpp
+        src/opengl/opengl_texture.hpp
 )
 
 add_subdirectory(${DEPENDENCY_DIR}/glad/)
