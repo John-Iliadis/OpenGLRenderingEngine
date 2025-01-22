@@ -37,6 +37,8 @@ add_executable(${PROJECT_NAME}
         src/opengl/opengl_shader.hpp
         src/opengl/opengl_texture.cpp
         src/opengl/opengl_texture.hpp
+        src/opengl/opengl_framebuffer.cpp
+        src/opengl/opengl_framebuffer.hpp
 )
 
 add_subdirectory(${DEPENDENCY_DIR}/glad/)
