@@ -39,14 +39,10 @@ add_executable(${PROJECT_NAME}
         src/opengl/opengl_texture.hpp
         src/opengl/opengl_framebuffer.cpp
         src/opengl/opengl_framebuffer.hpp
-        src/opengl/opengl_vertex_buffer_layout.cpp
-        src/opengl/opengl_vertex_buffer_layout.hpp
-        src/opengl/opengl_vertex_buffer.cpp
-        src/opengl/opengl_vertex_buffer.hpp
-        src/opengl/opengl_index_buffer.cpp
-        src/opengl/opengl_index_buffer.hpp
-        src/opengl/opengl_instance_buffer.cpp
-        src/opengl/opengl_instance_buffer.hpp
+        src/opengl/opengl_vertex_array.cpp
+        src/opengl/opengl_vertex_array.hpp
+        src/opengl/opengl_buffer.cpp
+        src/opengl/opengl_buffer.hpp
 )
 
 add_subdirectory(${DEPENDENCY_DIR}/glad/)
