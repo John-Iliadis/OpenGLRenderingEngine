@@ -9,11 +9,11 @@ OpenGLVertexBuffer::OpenGLVertexBuffer()
 {
 }
 
-OpenGLVertexBuffer::OpenGLVertexBuffer(uint32_t size, const void *data)
+OpenGLVertexBuffer::OpenGLVertexBuffer(GLenum usage, uint32_t size, const void* data)
     : mSize(size)
 {
     glCreateBuffers(1, &mRendererID);
-    glNamedBufferData(mRendererID, size, data, GL_STATIC_DRAW);
+    glNamedBufferData(mRendererID, size, data, usage);
 }
 
 OpenGLVertexBuffer::~OpenGLVertexBuffer()
@@ -44,6 +44,11 @@ OpenGLVertexBuffer &OpenGLVertexBuffer::operator=(OpenGLVertexBuffer &&other) no
     }
 
     return *this;
+}
+
+void OpenGLVertexBuffer::update(uint32_t offset, uint32_t size, const void *data)
+{
+    glNamedBufferSubData(mRendererID, offset, size, data);
 }
 
 void OpenGLVertexBuffer::bind() const

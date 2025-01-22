@@ -11,7 +11,7 @@ class OpenGLVertexBuffer
 {
 public:
     OpenGLVertexBuffer();
-    OpenGLVertexBuffer(uint32_t size, const void* data);
+    OpenGLVertexBuffer(GLenum usage, uint32_t size, const void* data);
     ~OpenGLVertexBuffer();
 
     OpenGLVertexBuffer(OpenGLVertexBuffer&& other) noexcept;
@@ -19,6 +19,8 @@ public:
 
     OpenGLVertexBuffer(const OpenGLVertexBuffer&) = delete;
     OpenGLVertexBuffer& operator=(const OpenGLVertexBuffer&) = delete;
+
+    void update(uint32_t offset, uint32_t size, const void* data);
 
     void bind() const;
     void unbind() const;
