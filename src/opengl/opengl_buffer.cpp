@@ -14,7 +14,7 @@ VertexAttribute::VertexAttribute(uint32_t index, uint32_t count, GLenum type, ui
 {
 }
 
-// -- OpenGLVertexBufferLayout -- //
+// -- VertexBufferLayout -- //
 
 VertexBufferLayout::VertexBufferLayout()
     : mStride()
@@ -59,7 +59,7 @@ const std::vector<VertexAttribute> &VertexBufferLayout::attributes() const
     return mAttributes;
 }
 
-// -- OpenGLVertexBuffer -- //
+// -- VertexBuffer -- //
 
 VertexBuffer::VertexBuffer()
     : mRendererID()
@@ -128,7 +128,7 @@ uint32_t VertexBuffer::size() const
     return mSize;
 }
 
-// -- OpenGLIndexBuffer -- //
+// -- IndexBuffer -- //
 
 IndexBuffer::IndexBuffer()
     : mRendererID()
@@ -198,7 +198,7 @@ uint32_t IndexBuffer::count() const
     return mCount;
 }
 
-// -- OpenGLVertexArray -- //
+// -- VertexArray -- //
 
 VertexArray::VertexArray()
 {
@@ -229,7 +229,7 @@ VertexArray &VertexArray::operator=(VertexArray &&other) noexcept
     return *this;
 }
 
-// todo: check if this is right
+// todo: check if this is right. May still need to set divisor for each attrib
 void VertexArray::attachVertexBuffer(const VertexBuffer &vertexBuffer, const VertexBufferLayout &layout, uint32_t bindingIndex)
 {
     glVertexArrayVertexBuffer(mRendererID, bindingIndex, vertexBuffer.id(), 0, layout.stride());
@@ -266,4 +266,92 @@ void VertexArray::unbind() const
 uint32_t VertexArray::id() const
 {
     return mRendererID;
+}
+
+// -- ShaderBuffer -- //
+
+ShaderBuffer::ShaderBuffer()
+    : mType(GL_INVALID_ENUM)
+    , mRendererID()
+    , mBinding(-1)
+    , mSize()
+{
+}
+
+ShaderBuffer::ShaderBuffer(GLenum type, GLenum usage, uint32_t binding, uint32_t size, const void* data)
+    : mType(type)
+    , mBinding(binding)
+    , mSize(size)
+{
+    glCreateBuffers(1, &mRendererID);
+    glBindBufferBase(type, binding, mRendererID);
+    glNamedBufferData(mRendererID, size, data, usage);
+}
+
+ShaderBuffer::~ShaderBuffer()
+{
+    glDeleteBuffers(1, &mRendererID);
+}
+
+ShaderBuffer::ShaderBuffer(ShaderBuffer &&other) noexcept
+{
+    mType = other.mType;
+    mRendererID = other.mRendererID;
+    mBinding = other.mBinding;
+    mSize = other.mSize;
+
+    other.mType = GL_INVALID_ENUM;
+    other.mRendererID = 0;
+    other.mBinding = -1;
+    other.mSize = 0;
+}
+
+ShaderBuffer &ShaderBuffer::operator=(ShaderBuffer &&other) noexcept
+{
+    if (this != &other)
+    {
+        glDeleteBuffers(1, &mRendererID);
+
+        mType = other.mType;
+        mRendererID = other.mRendererID;
+        mBinding = other.mBinding;
+        mSize = other.mSize;
+
+        other.mType = GL_INVALID_ENUM;
+        other.mRendererID = 0;
+        other.mBinding = -1;
+        other.mSize = 0;
+    }
+
+    return *this;
+}
+
+void ShaderBuffer::update(uint32_t offset, uint32_t size, const void *data)
+{
+    glNamedBufferSubData(mRendererID, offset, size, data);
+}
+
+void ShaderBuffer::bind() const
+{
+    glBindBuffer(mType, mRendererID);
+}
+
+void ShaderBuffer::unbind() const
+{
+    glBindBuffer(mType, 0);
+}
+
+uint32_t ShaderBuffer::id() const
+{
+    return mRendererID;
+}
+
+uint32_t ShaderBuffer::binding() const
+{
+    return mBinding;
+}
+
+uint32_t ShaderBuffer::size() const
+{
+    return mSize;
 }

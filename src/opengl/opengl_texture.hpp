@@ -57,6 +57,7 @@ GLenum toGLenum(TextureDataType dataType);
 GLenum toGLenum(TextureWrap wrapMode);
 GLenum toGLenumMinFilter(TextureFilter filterMode);
 GLenum toGLenumMagFilter(TextureFilter filterMode);
+
 uint32_t calculateMipLevels(int32_t textureWidth, int32_t textureHeight);
 
 std::shared_ptr<uint8_t> loadImage(const std::string& imagePath, int32_t* width, int32_t* height, int32_t requiredChannels);

@@ -100,7 +100,7 @@ int32_t getRequiredChannels(TextureFormat format)
     }
 }
 
-// -- OpenGLTexture -- //
+// -- Texture -- //
 
 Texture::Texture()
     : mRendererID()
@@ -163,7 +163,7 @@ int32_t Texture::height() const
     return mSpecification.height;
 }
 
-// -- OpenGLTexture2D -- //
+// -- Texture2D -- //
 
 Texture2D::Texture2D(const TextureSpecification &spec)
     : Texture(spec)
@@ -241,7 +241,7 @@ void Texture2D::uploadTextureData(const void *textureData)
                         textureData);
 }
 
-// -- OpenGLTexture2DMultisample -- //
+// -- Texture2DMultisample -- //
 
 Texture2DMultisample::Texture2DMultisample(const TextureSpecification &spec, int32_t sampleCount)
     : Texture(spec)
@@ -274,7 +274,7 @@ void Texture2DMultisample::create()
                                   GL_FALSE);
 }
 
-// -- OpenGLTextureCube -- //
+// -- TextureCube -- //
 
 TextureCube::TextureCube(const TextureSpecification &spec)
     : Texture(spec)

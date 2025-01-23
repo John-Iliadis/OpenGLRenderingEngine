@@ -119,4 +119,33 @@ private:
     uint32_t mRendererID;
 };
 
+class ShaderBuffer
+{
+public:
+    ShaderBuffer();
+    ShaderBuffer(GLenum type, GLenum usage, uint32_t binding, uint32_t size, const void* data);
+    ~ShaderBuffer();
+
+    ShaderBuffer(ShaderBuffer&& other) noexcept;
+    ShaderBuffer& operator=(ShaderBuffer&& other) noexcept;
+
+    ShaderBuffer(const ShaderBuffer&) = delete;
+    ShaderBuffer& operator=(const ShaderBuffer&) = delete;
+
+    void update(uint32_t offset, uint32_t size, const void *data);
+
+    void bind() const;
+    void unbind() const;
+
+    uint32_t id() const;
+    uint32_t size() const;
+    uint32_t binding() const;
+
+private:
+    GLenum mType;
+    uint32_t mRendererID;
+    int32_t mBinding;
+    uint32_t mSize;
+};
+
 #endif //OPENGLRENDERINGENGINE_OPENGL_BUFFER_HPP
