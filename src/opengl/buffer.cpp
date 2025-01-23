@@ -2,7 +2,7 @@
 // Created by Gianni on 23/01/2025.
 //
 
-#include "opengl_buffer.hpp"
+#include "buffer.hpp"
 
 // -- VertexAttribute -- //
 

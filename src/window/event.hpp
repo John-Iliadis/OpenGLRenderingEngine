@@ -8,7 +8,7 @@
 class Event
 {
 public:
-    struct SizeEvent
+    struct ResizeEvent
     {
         int width;
         int height;
@@ -53,7 +53,7 @@ public:
 
     union
     {
-        SizeEvent size;
+        ResizeEvent size;
         KeyEvent key;
         MouseButtonEvent mouseButton;
         MouseWheelEvent mouseWheel;

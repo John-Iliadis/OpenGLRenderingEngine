@@ -2,7 +2,7 @@
 // Created by Gianni on 22/01/2025.
 //
 
-#include "opengl_texture.hpp"
+#include "texture.hpp"
 #include <stb/stb_image.h>
 #include "../utils.hpp"
 

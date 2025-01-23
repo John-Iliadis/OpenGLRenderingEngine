@@ -5,7 +5,10 @@
 #ifndef OPENGLRENDERINGENGINE_APPLICATION_HPP
 #define OPENGLRENDERINGENGINE_APPLICATION_HPP
 
-#include "window/window.hpp"
+#include "../window/window.hpp"
+#include "../renderer/renderer.hpp"
+#include "../resource/resource_manager.hpp"
+#include "editor.hpp"
 
 class Application
 {
@@ -24,7 +27,9 @@ private:
 
 private:
     Window mWindow;
+    std::shared_ptr<Renderer> mRenderer;
+    std::shared_ptr<ResourceManager> mResourceManager;
+    Editor mEditor;
 };
-
 
 #endif //OPENGLRENDERINGENGINE_APPLICATION_HPP

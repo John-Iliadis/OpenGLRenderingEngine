@@ -2,8 +2,8 @@
 // Created by Gianni on 22/01/2025.
 //
 
-#ifndef OPENGLRENDERINGENGINE_OPENGL_TEXTURE_HPP
-#define OPENGLRENDERINGENGINE_OPENGL_TEXTURE_HPP
+#ifndef OPENGLRENDERINGENGINE_TEXTURE_HPP
+#define OPENGLRENDERINGENGINE_TEXTURE_HPP
 
 #include <glad/glad.h>
 #include <glm/glm.hpp>
@@ -131,4 +131,4 @@ private:
     void uploadTextureData(int32_t faceIndex, const void* textureData);
 };
 
-#endif //OPENGLRENDERINGENGINE_OPENGL_TEXTURE_HPP
+#endif //OPENGLRENDERINGENGINE_TEXTURE_HPP

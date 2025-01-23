@@ -18,8 +18,8 @@ add_executable(${PROJECT_NAME}
         src/main.cpp
         src/pch.cpp
         src/pch.hpp
-        src/application.cpp
-        src/application.hpp
+        src/app/application.cpp
+        src/app/application.hpp
         src/window/event.hpp
         src/window/input.cpp
         src/window/input.hpp
@@ -27,22 +27,30 @@ add_executable(${PROJECT_NAME}
         src/window/window.hpp
         src/utils.cpp
         src/utils.hpp
-        src/opengl/opengl_utils.cpp
-        src/opengl/opengl_utils.hpp
+        src/opengl/utils.cpp
+        src/opengl/utils.hpp
         src/renderer/camera.hpp
         src/renderer/camera.cpp
-        src/opengl/opengl_imgui.cpp
-        src/opengl/opengl_imgui.hpp
-        src/opengl/opengl_shader.cpp
-        src/opengl/opengl_shader.hpp
-        src/opengl/opengl_texture.cpp
-        src/opengl/opengl_texture.hpp
-        src/opengl/opengl_framebuffer.cpp
-        src/opengl/opengl_framebuffer.hpp
-        src/opengl/opengl_vertex_array.cpp
-        src/opengl/opengl_vertex_array.hpp
-        src/opengl/opengl_buffer.cpp
-        src/opengl/opengl_buffer.hpp
+        src/opengl/shader.cpp
+        src/opengl/shader.hpp
+        src/opengl/texture.cpp
+        src/opengl/texture.hpp
+        src/opengl/framebuffer.cpp
+        src/opengl/framebuffer.hpp
+        src/opengl/buffer.cpp
+        src/opengl/buffer.hpp
+        src/app/editor.cpp
+        src/app/editor.hpp
+        src/renderer/renderer.cpp
+        src/renderer/renderer.hpp
+        src/resource/resource_manager.cpp
+        src/resource/resource_manager.hpp
+        src/resource/resource_importer.cpp
+        src/resource/resource_importer.hpp
+        src/resource/loaded_resource.hpp
+        src/renderer/instanced_mesh.cpp
+        src/renderer/instanced_mesh.hpp
+        src/renderer/material.hpp
 )
 
 add_subdirectory(${DEPENDENCY_DIR}/glad/)

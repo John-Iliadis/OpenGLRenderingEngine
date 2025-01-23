@@ -2,7 +2,7 @@
 // Created by Gianni on 22/01/2025.
 //
 
-#include "opengl_shader.hpp"
+#include "shader.hpp"
 
 Shader::Shader()
     : mRendererId()

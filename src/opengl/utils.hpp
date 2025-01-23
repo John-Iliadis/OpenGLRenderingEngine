@@ -2,8 +2,8 @@
 // Created by Gianni on 21/01/2025.
 //
 
-#ifndef OPENGLRENDERINGENGINE_OPENGL_UTILS_HPP
-#define OPENGLRENDERINGENGINE_OPENGL_UTILS_HPP
+#ifndef OPENGLRENDERINGENGINE_UTILS_HPP
+#define OPENGLRENDERINGENGINE_UTILS_HPP
 
 #include <glad/glad.h>
 
@@ -15,4 +15,4 @@ void APIENTRY glDebugOutput(GLenum source,
                             const char* message,
                             const void* userParam);
 
-#endif //OPENGLRENDERINGENGINE_OPENGL_UTILS_HPP
+#endif //OPENGLRENDERINGENGINE_UTILS_HPP

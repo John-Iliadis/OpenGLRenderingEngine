@@ -2,7 +2,7 @@
 // Created by Gianni on 21/01/2025.
 //
 
-#include "opengl_utils.hpp"
+#include "utils.hpp"
 
 void APIENTRY glDebugOutput(GLenum source,
                             GLenum type,
@@ -12,8 +12,6 @@ void APIENTRY glDebugOutput(GLenum source,
                             const char* message,
                             const void* userParam)
 {
-    if(id == 131169 || id == 131185 || id == 131218 || id == 131204) return;
-
     std::cout << "---------------" << std::endl;
     std::cout << "Debug message (" << id << "): " <<  message << std::endl;
 

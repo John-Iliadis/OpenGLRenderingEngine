@@ -1,10 +1,32 @@
 //
-// Created by Gianni on 21/01/2025.
+// Created by Gianni on 23/01/2025.
 //
 
-#include "opengl_imgui.hpp"
+#include "editor.hpp"
 
-void imguiInit()
+Editor::Editor(std::shared_ptr<Renderer> renderer, std::shared_ptr<ResourceManager> resourceManager)
+    : mRenderer(renderer)
+    , mResourceManager(resourceManager)
+{
+    imguiInit();
+}
+
+Editor::~Editor()
+{
+    imguiTerminate();
+}
+
+void Editor::update(float dt)
+{
+    imguiBegin();
+}
+
+void Editor::render()
+{
+    imguiEnd();
+}
+
+void Editor::imguiInit()
 {
     ImGui::CreateContext();
     ImGui::StyleColorsDark();
@@ -17,14 +39,14 @@ void imguiInit()
     ImGui_ImplOpenGL3_Init("#version 460 core");
 }
 
-void imguiTerminate()
+void Editor::imguiTerminate()
 {
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
 }
 
-void imguiBegin()
+void Editor::imguiBegin()
 {
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
@@ -32,7 +54,7 @@ void imguiBegin()
     ImGui::DockSpaceOverViewport();
 }
 
-void imguiEnd()
+void Editor::imguiEnd()
 {
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

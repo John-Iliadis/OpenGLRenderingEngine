@@ -2,7 +2,7 @@
 // Created by Gianni on 22/01/2025.
 //
 
-#include "opengl_framebuffer.hpp"
+#include "framebuffer.hpp"
 
 Framebuffer::Framebuffer()
 {
@@ -58,12 +58,12 @@ void Framebuffer::addDepthAttachment(const Texture &texture)
     glNamedFramebufferTexture(mRendererID, GL_DEPTH_ATTACHMENT, texture.id(), 0);
 }
 
-void Framebuffer::addDepthStencilAttachment(const Texture2D &texture)
+void Framebuffer::addDepthStencilAttachment(const Texture &texture)
 {
     glNamedFramebufferTexture(mRendererID, GL_DEPTH_STENCIL_ATTACHMENT, texture.id(), 0);
 }
 
-void Framebuffer::setDrawBuffers(const std::initializer_list<uint32_t> drawBufferIndices)
+void Framebuffer::setDrawBuffers(std::initializer_list<uint32_t> drawBufferIndices)
 {
     bind();
 

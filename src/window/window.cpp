@@ -26,7 +26,7 @@ Window::Window(uint32_t width, uint32_t height)
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
 #endif
 
-    mWindow = glfwCreateWindow(mWidth, mHeight, "VulkanRenderer", nullptr, nullptr);
+    mWindow = glfwCreateWindow(mWidth, mHeight, "OpenGLRenderer", nullptr, nullptr);
     check(mWindow, "Failed to create GLFW window.");
 
     glfwMakeContextCurrent(mWindow);
