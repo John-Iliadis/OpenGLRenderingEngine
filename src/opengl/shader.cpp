@@ -32,16 +32,13 @@ Shader::Shader(ShaderList shaderList)
 
 Shader::~Shader()
 {
-    if (mRendererId)
-    {
-        glDeleteProgram(mRendererId);
-    }
+    glDeleteProgram(mRendererId);
 }
 
 Shader::Shader(Shader &&other) noexcept
 {
     mRendererId = other.mRendererId;
-    mUniformLocationCache.swap(other.mUniformLocationCache);
+    mUniformLocationCache = std::move(other.mUniformLocationCache);
 
     other.mRendererId = 0;
 }
@@ -50,13 +47,10 @@ Shader &Shader::operator=(Shader &&other) noexcept
 {
     if (this != &other)
     {
-        if (mRendererId)
-        {
-            glDeleteProgram(mRendererId);
-        }
+        glDeleteProgram(mRendererId);
 
         mRendererId = other.mRendererId;
-        mUniformLocationCache.swap(other.mUniformLocationCache);
+        mUniformLocationCache = std::move(other.mUniformLocationCache);
 
         other.mRendererId = 0;
     }

@@ -31,7 +31,7 @@ public:
 
 public:
     InstancedMesh();
-    InstancedMesh(uint32_t vertexCount, const void* vertexData, uint32_t indexCount, const void* indexData);
+    InstancedMesh(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices);
 
     uint32_t addInstance(const glm::mat4& model, uint32_t id, uint32_t materialIndex);
     void updateInstance(uint32_t instanceID, const glm::mat4& model, uint32_t id, uint32_t materialIndex);

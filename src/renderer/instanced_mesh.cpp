@@ -14,9 +14,9 @@ InstancedMesh::InstancedMesh()
 {
 }
 
-InstancedMesh::InstancedMesh(uint32_t vertexCount, const void *vertexData, uint32_t indexCount, const void *indexData)
-    : mIndexBuffer(indexCount, indexData)
-    , mVertexBuffer(GL_STATIC_DRAW, vertexCount * sVertexSize, vertexData)
+InstancedMesh::InstancedMesh(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices)
+    : mIndexBuffer(indices.size(), indices.data())
+    , mVertexBuffer(GL_STATIC_DRAW, vertices.size() * sVertexSize, vertices.data())
     , mInstanceBuffer(GL_DYNAMIC_DRAW, sInitialInstanceBufferCapacity * sInstanceSize, nullptr)
     , mInstanceCount()
     , mInstanceBufferCapacity(sInitialInstanceBufferCapacity)

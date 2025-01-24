@@ -10,15 +10,6 @@
 #include "../opengl/texture.hpp"
 #include "../opengl/buffer.hpp"
 
-struct TextureData
-{
-    std::filesystem::path path;
-    int32_t width;
-    int32_t height;
-    std::shared_ptr<uint8_t> pixels;
-    TextureDataType dataType;
-};
-
 struct MeshData
 {
     std::string name;
@@ -31,12 +22,14 @@ struct LoadedModel
 {
     struct Mesh
     {
+        std::string name;
         std::shared_ptr<InstancedMesh> mesh;
         uint32_t materialIndex;
     };
 
     struct Material
     {
+        std::string name;
         std::filesystem::path albedoTexturePath;
         std::filesystem::path specularTexturePath;
         std::filesystem::path roughnessTexturePath;
