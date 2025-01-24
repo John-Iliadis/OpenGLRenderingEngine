@@ -12,5 +12,4 @@ class Renderer
     friend class Editor;
 };
 
-
 #endif //OPENGLRENDERINGENGINE_RENDERER_HPP

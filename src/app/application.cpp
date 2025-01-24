@@ -9,6 +9,9 @@ static constexpr uint32_t sInitialWindowHeight = 1080;
 
 Application::Application()
     : mWindow(sInitialWindowWidth, sInitialWindowHeight)
+    , mRenderer()
+    , mResourceManager()
+    , mEditor(mRenderer, mResourceManager)
 {
 }
 
