@@ -75,7 +75,12 @@ uint32_t calculateMipLevels(int32_t textureWidth, int32_t textureHeight)
 std::shared_ptr<uint8_t> loadImage(const std::string& imagePath, int32_t* width, int32_t* height, int32_t requiredChannels)
 {
     uint8_t* data = stbi_load(imagePath.c_str(), width, height, nullptr, requiredChannels);
-    check(data, std::format("Failed to load {}", imagePath).c_str());
+
+    if (!data)
+    {
+        debugLog(std::format("loadImage: Failed to load {}", imagePath));
+        return nullptr;
+    }
 
     return std::shared_ptr<uint8_t>(data, [] (uint8_t* d) { stbi_image_free(d); });
 }
@@ -83,7 +88,12 @@ std::shared_ptr<uint8_t> loadImage(const std::string& imagePath, int32_t* width,
 std::shared_ptr<uint8_t> loadImageHDR(const std::string& imagePath, int32_t* width, int32_t* height, int32_t requiredChannels)
 {
     float* data = stbi_loadf(imagePath.c_str(), width, height, nullptr, requiredChannels);
-    check(data, std::format("Failed to load {}", imagePath).c_str());
+
+    if (!data)
+    {
+        debugLog(std::format("loadImage: Failed to load {}", imagePath));
+        return nullptr;
+    }
 
     return std::shared_ptr<uint8_t>((uint8_t*)data, [] (uint8_t* d) { stbi_image_free(d); });
 }
@@ -98,6 +108,152 @@ int32_t getRequiredChannels(TextureFormat format)
         case TextureFormat::RGBA32F: return 4;
         default: assert(false);
     }
+}
+
+// -- ImageLoader -- //
+
+ImageLoader::ImageLoader()
+    : mSuccess()
+    , mWidth()
+    , mHeight()
+    , mComponents()
+    , mFormat()
+    , mDataType()
+    , mData()
+{
+}
+
+ImageLoader::ImageLoader(const std::filesystem::path &imagePath, int32_t requiredComponents)
+{
+    load(imagePath, requiredComponents);
+}
+
+ImageLoader::~ImageLoader() { clear(); }
+
+ImageLoader::ImageLoader(ImageLoader &&other) noexcept
+    : ImageLoader()
+{
+    swap(other);
+}
+
+ImageLoader &ImageLoader::operator=(ImageLoader &&other) noexcept
+{
+    if (this != &other)
+    {
+        clear();
+        swap(other);
+    }
+
+    return *this;
+}
+
+void ImageLoader::load(const std::filesystem::path &imagePath, int32_t requiredComponents)
+{
+    clear();
+
+    mPath = imagePath;
+    bool isHDR = stbi_is_hdr(imagePath.string().c_str());
+
+    if (isHDR)
+    {
+        mData = stbi_loadf(imagePath.string().c_str(), &mWidth, &mHeight, &mComponents, requiredComponents);
+    }
+    else
+    {
+        mData = stbi_load(imagePath.string().c_str(), &mWidth, &mHeight, &mComponents, requiredComponents);
+    }
+
+    if (!mData)
+        return;
+
+    if (isHDR)
+    {
+        mDataType = TextureDataType::FLOAT;
+
+        switch (mComponents)
+        {
+            case 1: mFormat = TextureFormat::R8; break;
+            case 3: mFormat = TextureFormat::RGB8; break;
+            case 4: mFormat = TextureFormat::RGBA8; break;
+            default: check(false, "Case not supported.");
+        }
+    }
+    else
+    {
+        mDataType = TextureDataType::UINT8;
+
+        switch (mComponents)
+        {
+            case 3: mFormat = TextureFormat::RGB32F; break;
+            case 4: mFormat = TextureFormat::RGBA32F; break;
+            default: check(false, "Case not supported.");
+        }
+    }
+
+    mSuccess = true;
+}
+
+void ImageLoader::swap(ImageLoader &other)
+{
+    std::swap(mPath, other.mPath);
+    std::swap(mSuccess, other.mSuccess);
+    std::swap(mWidth, other.mWidth);
+    std::swap(mHeight, other.mHeight);
+    std::swap(mComponents, other.mComponents);
+    std::swap(mFormat, other.mFormat);
+    std::swap(mDataType, other.mDataType);
+    std::swap(mData, other.mData);
+}
+
+void ImageLoader::clear()
+{
+    mPath = "";
+    mSuccess = false;
+    mWidth = 0;
+    mHeight = 0;
+    mComponents = 0;
+    stbi_image_free(mData);
+    mData = nullptr;
+}
+
+const std::filesystem::path &ImageLoader::path() const
+{
+    return mPath;
+}
+
+bool ImageLoader::success() const
+{
+    return mSuccess;
+}
+
+int32_t ImageLoader::width() const
+{
+    return mWidth;
+}
+
+int32_t ImageLoader::height() const
+{
+    return mHeight;
+}
+
+int32_t ImageLoader::components() const
+{
+    return mComponents;
+}
+
+TextureFormat ImageLoader::format() const
+{
+    return mFormat;
+}
+
+TextureDataType ImageLoader::dataType() const
+{
+    return mDataType;
+}
+
+void *ImageLoader::data() const
+{
+    return mData;
 }
 
 // -- Texture -- //
@@ -121,8 +277,11 @@ Texture::~Texture()
 
 Texture::Texture(Texture &&other) noexcept
 {
-    std::swap(mRendererID, other.mRendererID);
-    std::swap(mSpecification, other.mSpecification);
+    mRendererID = other.mRendererID;
+    mSpecification = other.mSpecification;
+
+    other.mRendererID = 0;
+    other.mSpecification = {};
 }
 
 Texture &Texture::operator=(Texture &&other) noexcept
@@ -131,8 +290,11 @@ Texture &Texture::operator=(Texture &&other) noexcept
     {
         glDeleteTextures(1, &mRendererID);
 
-        std::swap(mRendererID, other.mRendererID);
-        std::swap(mSpecification, other.mSpecification);
+        mRendererID = other.mRendererID;
+        mSpecification = other.mSpecification;
+
+        other.mRendererID = 0;
+        other.mSpecification = {};
     }
 
     return *this;
@@ -188,6 +350,8 @@ Texture2D::Texture2D(const TextureSpecification &spec, const std::string &textur
         textureData = loadImageHDR(texturePath, &mSpecification.width, &mSpecification.height, requiredChannels);
     else
         textureData = loadImage(texturePath, &mSpecification.width, &mSpecification.height, requiredChannels);
+
+    check(static_cast<bool>(textureData), "Failed to load texture data.");
 
     create();
     uploadTextureData(textureData.get());
@@ -303,6 +467,8 @@ TextureCube::TextureCube(const TextureSpecification &spec, const std::array<std:
             textureData = loadImageHDR(texturePaths.at(i), &mSpecification.width, &mSpecification.height, requiredChannels);
         else
             textureData = loadImage(texturePaths.at(i), &mSpecification.width, &mSpecification.height, requiredChannels);
+
+        check(static_cast<bool>(textureData), "Failed to load texture data.");
 
         uploadTextureData(i, textureData.get());
     }

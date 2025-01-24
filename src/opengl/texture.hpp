@@ -65,6 +65,43 @@ std::shared_ptr<uint8_t> loadImageHDR(const std::string& imagePath, int32_t* wid
 
 int32_t getRequiredChannels(TextureFormat format);
 
+class ImageLoader
+{
+public:
+    ImageLoader();
+    ImageLoader(const std::filesystem::path& imagePath, int32_t requiredComponents = 0);
+    ~ImageLoader();
+
+    ImageLoader(const ImageLoader&) = delete;
+    ImageLoader& operator=(const ImageLoader&) = delete;
+
+    ImageLoader(ImageLoader&& other) noexcept;
+    ImageLoader& operator=(ImageLoader&& other) noexcept;
+
+    void load(const std::filesystem::path& imagePath, int32_t requiredComponents = 0);
+    void swap(ImageLoader& other);
+    void clear();
+
+    const std::filesystem::path& path() const;
+    bool success() const;
+    int32_t width() const;
+    int32_t height() const;
+    int32_t components() const;
+    TextureFormat format() const;
+    TextureDataType dataType() const;
+    void* data() const;
+
+private:
+    std::filesystem::path mPath;
+    bool mSuccess;
+    int32_t mWidth;
+    int32_t mHeight;
+    int32_t mComponents;
+    TextureFormat mFormat;
+    TextureDataType mDataType;
+    void* mData;
+};
+
 class Texture
 {
 public:
