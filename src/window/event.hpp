@@ -38,27 +38,14 @@ public:
         double y;
     };
 
-    enum EventType
-    {
-        Resized,
-        Key,
-        MouseWheelScrolled,
-        MouseButton,
-        MouseMoved,
-        WindowMinimized,
-        WindowRestored
-    };
+    std::variant<ResizeEvent,
+        KeyEvent,
+        MouseButtonEvent,
+        MouseWheelEvent,
+        MouseMoveEvent> data;
 
-    EventType type;
-
-    union
-    {
-        ResizeEvent size;
-        KeyEvent key;
-        MouseButtonEvent mouseButton;
-        MouseWheelEvent mouseWheel;
-        MouseMoveEvent mouseMove;
-    };
+    template<typename T>
+    constexpr bool is() const { return static_cast<bool>(std::get_if<T>(data)); }
 };
 
 #endif //OPENGLRENDERINGENGINE_EVENT_HPP

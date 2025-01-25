@@ -52,6 +52,8 @@ add_executable(${PROJECT_NAME}
         src/renderer/instanced_mesh.hpp
         src/renderer/material.hpp
         src/renderer/model.hpp
+        src/app/simple_notification_service.cpp
+        src/app/simple_notification_service.hpp
 )
 
 add_subdirectory(${DEPENDENCY_DIR}/glad/)
