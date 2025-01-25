@@ -48,11 +48,12 @@ void Camera::setState(Camera::State state)
 
 void Camera::handleEvent(const Event &event)
 {
-    if (event.type == Event::Resized)
-        resize(event.size.width, event.size.height);
+    //event.type == Event::Resized
+    if (const auto e = event.getIf<Event::WindowResize>())
+        resize(e->width, e->height);
 
-    if (event.type == Event::MouseWheelScrolled)
-        scroll(event.mouseWheel.x, event.mouseWheel.y);
+    if (const auto e = event.getIf<Event::MouseWheel>())
+        scroll(e->x, e->y);
 }
 
 void Camera::update(float dt)

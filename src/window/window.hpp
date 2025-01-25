@@ -35,7 +35,6 @@ private:
     static void cursorPosCallback(GLFWwindow* glfwWindow, double x, double y);
     static void mouseScrollCallback(GLFWwindow* glfwWindow, double x, double y);
     static void framebufferSizeCallback(GLFWwindow* glfwWindow, int width, int height);
-    static void windowMinificationCallback(GLFWwindow* glfwWindow, int minimized);
 
 private:
     GLFWwindow* mWindow;

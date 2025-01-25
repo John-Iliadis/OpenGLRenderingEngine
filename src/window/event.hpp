@@ -8,44 +8,50 @@
 class Event
 {
 public:
-    struct ResizeEvent
+    struct WindowResize
     {
         int width;
         int height;
     };
 
-    struct KeyEvent
+    struct Key
     {
         int key;
         int action;
     };
 
-    struct MouseButtonEvent
+    struct MouseButton
     {
         int button;
         int action;
     };
 
-    struct MouseWheelEvent
+    struct MouseWheel
     {
         double x;
         double y;
     };
 
-    struct MouseMoveEvent
+    struct MouseMove
     {
         double x;
         double y;
     };
 
-    std::variant<ResizeEvent,
-        KeyEvent,
-        MouseButtonEvent,
-        MouseWheelEvent,
-        MouseMoveEvent> data;
+    std::variant<WindowResize,
+        Key,
+        MouseButton,
+        MouseWheel,
+        MouseMove> data;
 
     template<typename T>
-    constexpr bool is() const { return static_cast<bool>(std::get_if<T>(data)); }
+    Event(const T& event) : data(event) {}
+
+    template<typename T>
+    T* getIf() { return std::get_if<T>(&data); }
+
+    template<typename T>
+    const T* getIf() const { return std::get_if<T>(&data); }
 };
 
 #endif //OPENGLRENDERINGENGINE_EVENT_HPP

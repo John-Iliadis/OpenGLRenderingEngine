@@ -13,6 +13,7 @@ Application::Application()
     , mResourceManager()
     , mEditor(mRenderer, mResourceManager)
 {
+    SimpleNotificationService::init();
 }
 
 Application::~Application()

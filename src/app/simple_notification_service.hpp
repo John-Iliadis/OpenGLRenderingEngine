@@ -32,7 +32,13 @@ public:
         ModelMaterialRemap> message;
 
     template<typename T>
-    constexpr bool is() const { return static_cast<bool>(std::get_if<T>(message)); }
+    Message(const T& message) : message(message) {}
+
+    template<typename T>
+    T* getIf() { return std::get_if<T>(&message); }
+
+    template<typename T>
+    const T* getIf() { return std::get_if<T>(&message); }
 };
 
 class SubscriberSNS
@@ -76,7 +82,7 @@ public:
     static void publishMessage(Topic::Type topicType, const Message& message);
 
 private:
-    static std::array<Topic, Topic::Type::Count> mTopics;
+    inline static std::array<Topic, Topic::Type::Count> mTopics;
 };
 
 #endif //OPENGLRENDERINGENGINE_SIMPLE_NOTIFICATION_SERVICE_HPP
