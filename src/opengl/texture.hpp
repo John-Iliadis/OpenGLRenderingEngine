@@ -11,6 +11,7 @@
 enum class TextureFormat
 {
     R8,
+    RG8,
     RGB8,
     RGBA8,
     RGB32F,
@@ -52,7 +53,8 @@ struct TextureSpecification
     bool generateMipMaps;
 };
 
-GLenum toGLenum(TextureFormat format);
+GLenum toGLenumFormat(TextureFormat format);
+GLenum toGLenumInternalFormat(TextureFormat format);
 GLenum toGLenum(TextureDataType dataType);
 GLenum toGLenum(TextureWrap wrapMode);
 GLenum toGLenumMinFilter(TextureFilter filterMode);
@@ -60,27 +62,22 @@ GLenum toGLenumMagFilter(TextureFilter filterMode);
 
 uint32_t calculateMipLevels(int32_t textureWidth, int32_t textureHeight);
 
-std::shared_ptr<uint8_t> loadImage(const std::string& imagePath, int32_t* width, int32_t* height, int32_t requiredChannels);
-std::shared_ptr<uint8_t> loadImageHDR(const std::string& imagePath, int32_t* width, int32_t* height, int32_t requiredChannels);
+int32_t getRequiredComponents(TextureFormat format);
 
-int32_t getRequiredChannels(TextureFormat format);
-
-class ImageLoader
+class LoadedImage
 {
 public:
-    ImageLoader();
-    ImageLoader(const std::filesystem::path& imagePath, int32_t requiredComponents = 0);
-    ~ImageLoader();
+    LoadedImage();
+    LoadedImage(const std::filesystem::path& imagePath, int32_t requiredComponents = 0);
+    ~LoadedImage();
 
-    ImageLoader(const ImageLoader&) = delete;
-    ImageLoader& operator=(const ImageLoader&) = delete;
+    LoadedImage(const LoadedImage&) = delete;
+    LoadedImage& operator=(const LoadedImage&) = delete;
 
-    ImageLoader(ImageLoader&& other) noexcept;
-    ImageLoader& operator=(ImageLoader&& other) noexcept;
+    LoadedImage(LoadedImage&& other) noexcept;
+    LoadedImage& operator=(LoadedImage&& other) noexcept;
 
-    void load(const std::filesystem::path& imagePath, int32_t requiredComponents = 0);
-    void swap(ImageLoader& other);
-    void clear();
+    void swap(LoadedImage& other);
 
     const std::filesystem::path& path() const;
     bool success() const;

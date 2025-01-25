@@ -6,11 +6,28 @@
 #include <stb/stb_image.h>
 #include "../utils.hpp"
 
-GLenum toGLenum(TextureFormat format)
+GLenum toGLenumFormat(TextureFormat format)
+{
+    switch (format)
+    {
+        case TextureFormat::R8: return GL_RED;
+        case TextureFormat::RG8: return GL_RG;
+        case TextureFormat::RGB8: return GL_RGB;
+        case TextureFormat::RGBA8: return GL_RGBA;
+        case TextureFormat::RGB32F: return GL_RGB;
+        case TextureFormat::RGBA32F: return GL_RGBA;
+        case TextureFormat::D32: return GL_DEPTH_COMPONENT;
+        case TextureFormat::D24S8: return GL_DEPTH_STENCIL;
+        default: assert(false);
+    }
+}
+
+GLenum toGLenumInternalFormat(TextureFormat format)
 {
     switch (format)
     {
         case TextureFormat::R8: return GL_R8;
+        case TextureFormat::RG8: return GL_RG8;
         case TextureFormat::RGB8: return GL_RGB8;
         case TextureFormat::RGBA8: return GL_RGBA8;
         case TextureFormat::RGB32F: return GL_RGB32F;
@@ -49,7 +66,7 @@ GLenum toGLenumMinFilter(TextureFilter filterMode)
     {
         case TextureFilter::Nearest: return GL_NEAREST;
         case TextureFilter::Bilinear: return GL_LINEAR;
-        case TextureFilter::Trilinear: GL_LINEAR_MIPMAP_LINEAR;
+        case TextureFilter::Trilinear: return GL_LINEAR_MIPMAP_LINEAR;
         case TextureFilter::Anisotropic: return GL_LINEAR_MIPMAP_LINEAR;
         default: assert(false);
     }
@@ -59,10 +76,10 @@ GLenum toGLenumMagFilter(TextureFilter filterMode)
 {
     switch (filterMode)
     {
-        case TextureFilter::Nearest: GL_NEAREST;
-        case TextureFilter::Bilinear: GL_LINEAR;
-        case TextureFilter::Trilinear:  GL_LINEAR;
-        case TextureFilter::Anisotropic: GL_LINEAR;
+        case TextureFilter::Nearest: return GL_NEAREST;
+        case TextureFilter::Bilinear: return GL_LINEAR;
+        case TextureFilter::Trilinear:  return GL_LINEAR;
+        case TextureFilter::Anisotropic: return GL_LINEAR;
         default: assert(false);
     }
 }
@@ -72,33 +89,7 @@ uint32_t calculateMipLevels(int32_t textureWidth, int32_t textureHeight)
     return glm::floor(glm::log2((float)glm::max(textureWidth, textureHeight))) + 1;
 }
 
-std::shared_ptr<uint8_t> loadImage(const std::string& imagePath, int32_t* width, int32_t* height, int32_t requiredChannels)
-{
-    uint8_t* data = stbi_load(imagePath.c_str(), width, height, nullptr, requiredChannels);
-
-    if (!data)
-    {
-        debugLog(std::format("loadImage: Failed to load {}", imagePath));
-        return nullptr;
-    }
-
-    return std::shared_ptr<uint8_t>(data, [] (uint8_t* d) { stbi_image_free(d); });
-}
-
-std::shared_ptr<uint8_t> loadImageHDR(const std::string& imagePath, int32_t* width, int32_t* height, int32_t requiredChannels)
-{
-    float* data = stbi_loadf(imagePath.c_str(), width, height, nullptr, requiredChannels);
-
-    if (!data)
-    {
-        debugLog(std::format("loadImage: Failed to load {}", imagePath));
-        return nullptr;
-    }
-
-    return std::shared_ptr<uint8_t>((uint8_t*)data, [] (uint8_t* d) { stbi_image_free(d); });
-}
-
-int32_t getRequiredChannels(TextureFormat format)
+int32_t getRequiredComponents(TextureFormat format)
 {
     switch (format)
     {
@@ -112,8 +103,9 @@ int32_t getRequiredChannels(TextureFormat format)
 
 // -- ImageLoader -- //
 
-ImageLoader::ImageLoader()
-    : mSuccess()
+LoadedImage::LoadedImage()
+    : mPath()
+    , mSuccess()
     , mWidth()
     , mHeight()
     , mComponents()
@@ -123,34 +115,9 @@ ImageLoader::ImageLoader()
 {
 }
 
-ImageLoader::ImageLoader(const std::filesystem::path &imagePath, int32_t requiredComponents)
+LoadedImage::LoadedImage(const std::filesystem::path &imagePath, int32_t requiredComponents)
+    : LoadedImage()
 {
-    load(imagePath, requiredComponents);
-}
-
-ImageLoader::~ImageLoader() { clear(); }
-
-ImageLoader::ImageLoader(ImageLoader &&other) noexcept
-    : ImageLoader()
-{
-    swap(other);
-}
-
-ImageLoader &ImageLoader::operator=(ImageLoader &&other) noexcept
-{
-    if (this != &other)
-    {
-        clear();
-        swap(other);
-    }
-
-    return *this;
-}
-
-void ImageLoader::load(const std::filesystem::path &imagePath, int32_t requiredComponents)
-{
-    clear();
-
     mPath = imagePath;
     bool isHDR = stbi_is_hdr(imagePath.string().c_str());
 
@@ -172,9 +139,8 @@ void ImageLoader::load(const std::filesystem::path &imagePath, int32_t requiredC
 
         switch (mComponents)
         {
-            case 1: mFormat = TextureFormat::R8; break;
-            case 3: mFormat = TextureFormat::RGB8; break;
-            case 4: mFormat = TextureFormat::RGBA8; break;
+            case 3: mFormat = TextureFormat::RGB32F; break;
+            case 4: mFormat = TextureFormat::RGBA32F; break;
             default: check(false, "Case not supported.");
         }
     }
@@ -184,8 +150,10 @@ void ImageLoader::load(const std::filesystem::path &imagePath, int32_t requiredC
 
         switch (mComponents)
         {
-            case 3: mFormat = TextureFormat::RGB32F; break;
-            case 4: mFormat = TextureFormat::RGBA32F; break;
+            case 1: mFormat = TextureFormat::R8; break;
+            case 2: mFormat = TextureFormat::RG8; break;
+            case 3: mFormat = TextureFormat::RGB8; break;
+            case 4: mFormat = TextureFormat::RGBA8; break;
             default: check(false, "Case not supported.");
         }
     }
@@ -193,7 +161,32 @@ void ImageLoader::load(const std::filesystem::path &imagePath, int32_t requiredC
     mSuccess = true;
 }
 
-void ImageLoader::swap(ImageLoader &other)
+LoadedImage::~LoadedImage() { stbi_image_free(mData); }
+
+LoadedImage::LoadedImage(LoadedImage &&other) noexcept
+    : LoadedImage()
+{
+    swap(other);
+}
+
+LoadedImage &LoadedImage::operator=(LoadedImage &&other) noexcept
+{
+    if (this != &other)
+    {
+        mPath = "";
+        mSuccess = false;
+        mWidth = 0;
+        mHeight = 0;
+        mComponents = 0;
+        mData = nullptr;
+
+        swap(other);
+    }
+
+    return *this;
+}
+
+void LoadedImage::swap(LoadedImage &other)
 {
     std::swap(mPath, other.mPath);
     std::swap(mSuccess, other.mSuccess);
@@ -205,53 +198,42 @@ void ImageLoader::swap(ImageLoader &other)
     std::swap(mData, other.mData);
 }
 
-void ImageLoader::clear()
-{
-    mPath = "";
-    mSuccess = false;
-    mWidth = 0;
-    mHeight = 0;
-    mComponents = 0;
-    stbi_image_free(mData);
-    mData = nullptr;
-}
-
-const std::filesystem::path &ImageLoader::path() const
+const std::filesystem::path &LoadedImage::path() const
 {
     return mPath;
 }
 
-bool ImageLoader::success() const
+bool LoadedImage::success() const
 {
     return mSuccess;
 }
 
-int32_t ImageLoader::width() const
+int32_t LoadedImage::width() const
 {
     return mWidth;
 }
 
-int32_t ImageLoader::height() const
+int32_t LoadedImage::height() const
 {
     return mHeight;
 }
 
-int32_t ImageLoader::components() const
+int32_t LoadedImage::components() const
 {
     return mComponents;
 }
 
-TextureFormat ImageLoader::format() const
+TextureFormat LoadedImage::format() const
 {
     return mFormat;
 }
 
-TextureDataType ImageLoader::dataType() const
+TextureDataType LoadedImage::dataType() const
 {
     return mDataType;
 }
 
-void *ImageLoader::data() const
+void *LoadedImage::data() const
 {
     return mData;
 }
@@ -338,23 +320,25 @@ Texture2D::Texture2D(const TextureSpecification &spec, const void *textureData)
 {
     create();
     uploadTextureData(textureData);
+
+    if (mSpecification.generateMipMaps)
+        glGenerateTextureMipmap(mRendererID);
 }
 
 Texture2D::Texture2D(const TextureSpecification &spec, const std::string &texturePath)
     : Texture(spec)
 {
-    int32_t requiredChannels = getRequiredChannels(mSpecification.format);
+    int32_t requiredChannels = getRequiredComponents(mSpecification.format);
 
-    std::shared_ptr<uint8_t> textureData;
-    if (spec.dataType == TextureDataType::FLOAT)
-        textureData = loadImageHDR(texturePath, &mSpecification.width, &mSpecification.height, requiredChannels);
-    else
-        textureData = loadImage(texturePath, &mSpecification.width, &mSpecification.height, requiredChannels);
+    LoadedImage loadedImage(texturePath, requiredChannels);
 
-    check(static_cast<bool>(textureData), "Failed to load texture data.");
+    check(loadedImage.success(), "Failed to load texture data.");
 
     create();
-    uploadTextureData(textureData.get());
+    uploadTextureData(loadedImage.data());
+
+    if (mSpecification.generateMipMaps)
+        glGenerateTextureMipmap(mRendererID);
 }
 
 void Texture2D::resize(int32_t width, int32_t height)
@@ -373,13 +357,13 @@ void Texture2D::create()
     glTextureParameteri(mRendererID, GL_TEXTURE_WRAP_S, toGLenum(mSpecification.wrapMode));
     glTextureParameteri(mRendererID, GL_TEXTURE_WRAP_T, toGLenum(mSpecification.wrapMode));
     glTextureParameteri(mRendererID, GL_TEXTURE_MIN_FILTER, toGLenumMinFilter(mSpecification.filterMode));
-    glTextureParameteri(mRendererID, GL_TEXTURE_MAG_FILTER, toGLenumMinFilter(mSpecification.filterMode));
+    glTextureParameteri(mRendererID, GL_TEXTURE_MAG_FILTER, toGLenumMagFilter(mSpecification.filterMode));
 
     if (mSpecification. filterMode == TextureFilter::Anisotropic)
     {
         float maxAnisotropy = 0.f;
-        glGetTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, &maxAnisotropy);
-        glTextureParameterf(mRendererID, GL_TEXTURE_MAX_ANISOTROPY, glm::max(16.f, maxAnisotropy));
+        glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &maxAnisotropy);
+        glTextureParameterf(mRendererID, GL_TEXTURE_MAX_ANISOTROPY, glm::min(16.f, maxAnisotropy));
     }
 
     uint32_t mipLevels = 0;
@@ -388,7 +372,7 @@ void Texture2D::create()
 
     glTextureStorage2D(mRendererID,
                        mipLevels,
-                       toGLenum(mSpecification.format),
+                       toGLenumInternalFormat(mSpecification.format),
                        mSpecification.width,
                        mSpecification.height);
 }
@@ -400,7 +384,7 @@ void Texture2D::uploadTextureData(const void *textureData)
                         0, 0,
                         mSpecification.width,
                         mSpecification.height,
-                        toGLenum(mSpecification.format),
+                        toGLenumFormat(mSpecification.format),
                         toGLenum(mSpecification.dataType),
                         textureData);
 }
@@ -432,7 +416,7 @@ void Texture2DMultisample::create()
     glCreateTextures(GL_TEXTURE_2D_MULTISAMPLE, 1, &mRendererID);
     glTextureStorage2DMultisample(mRendererID,
                                   mSampleCount,
-                                  toGLenum(mSpecification.format),
+                                  toGLenumInternalFormat(mSpecification.format),
                                   mSpecification.width,
                                   mSpecification.height,
                                   GL_FALSE);
@@ -452,6 +436,9 @@ TextureCube::TextureCube(const TextureSpecification &spec, const void **textureD
     create();
     for (int32_t i = 0; i < 6; ++i)
         uploadTextureData(i, textureData[i]);
+
+    if (mSpecification.generateMipMaps)
+        glGenerateTextureMipmap(mRendererID);
 }
 
 TextureCube::TextureCube(const TextureSpecification &spec, const std::array<std::string, 6> &texturePaths)
@@ -459,19 +446,18 @@ TextureCube::TextureCube(const TextureSpecification &spec, const std::array<std:
 {
     create();
 
-    int32_t requiredChannels = getRequiredChannels(mSpecification.format);
+    int32_t requiredChannels = getRequiredComponents(mSpecification.format);
     for (uint32_t i = 0; i < 6; ++i)
     {
-        std::shared_ptr<uint8_t> textureData;
-        if (spec.dataType == TextureDataType::FLOAT)
-            textureData = loadImageHDR(texturePaths.at(i), &mSpecification.width, &mSpecification.height, requiredChannels);
-        else
-            textureData = loadImage(texturePaths.at(i), &mSpecification.width, &mSpecification.height, requiredChannels);
+        LoadedImage loadedImage(texturePaths.at(i), requiredChannels);
 
-        check(static_cast<bool>(textureData), "Failed to load texture data.");
+        check(static_cast<bool>(loadedImage.success()), "Failed to load texture data.");
 
-        uploadTextureData(i, textureData.get());
+        uploadTextureData(i, loadedImage.data());
     }
+
+    if (mSpecification.generateMipMaps)
+        glGenerateTextureMipmap(mRendererID);
 }
 
 void TextureCube::create()
@@ -486,7 +472,7 @@ void TextureCube::create()
     if (mSpecification. filterMode == TextureFilter::Anisotropic)
     {
         float maxAnisotropy = 0.f;
-        glGetTexParameterfv(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAX_ANISOTROPY, &maxAnisotropy);
+        glGetTextureParameterfv(mRendererID, GL_TEXTURE_MAX_ANISOTROPY, &maxAnisotropy);
         glTextureParameterf(mRendererID, GL_TEXTURE_MAX_ANISOTROPY, glm::max(16.f, maxAnisotropy));
     }
 
@@ -496,7 +482,7 @@ void TextureCube::create()
 
     glTextureStorage2D(mRendererID,
                        mipLevels,
-                       toGLenum(mSpecification.format),
+                       toGLenumInternalFormat(mSpecification.format),
                        mSpecification.width,
                        mSpecification.height);
 }
@@ -509,7 +495,7 @@ void TextureCube::uploadTextureData(int32_t faceIndex, const void* textureData)
                         mSpecification.width,
                         mSpecification.height,
                         1,
-                        toGLenum(mSpecification.format),
+                        toGLenumFormat(mSpecification.format),
                         toGLenum(mSpecification.dataType),
                         textureData);
 }
