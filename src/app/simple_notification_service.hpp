@@ -11,6 +11,7 @@ public:
     struct MaterialDeleted
     {
         uint32_t deletedIndex;
+        uint32_t defaultTextureIndex;
         std::optional<uint32_t> movedMaterialIndex;
     };
 
@@ -38,7 +39,7 @@ public:
     T* getIf() { return std::get_if<T>(&message); }
 
     template<typename T>
-    const T* getIf() { return std::get_if<T>(&message); }
+    const T* getIf() const { return std::get_if<T>(&message); }
 };
 
 class SubscriberSNS
@@ -46,7 +47,7 @@ class SubscriberSNS
 public:
     SubscriberSNS() = default;
     virtual ~SubscriberSNS() = default;
-    virtual void notify(const Message& message) = 0;
+    virtual void notify(const Message& message) {};
 };
 
 class Topic

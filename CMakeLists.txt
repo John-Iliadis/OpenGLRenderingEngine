@@ -54,6 +54,13 @@ add_executable(${PROJECT_NAME}
         src/renderer/model.hpp
         src/app/simple_notification_service.cpp
         src/app/simple_notification_service.hpp
+        src/resource/metadata.hpp
+        src/scene_graph/scene_node.cpp
+        src/scene_graph/scene_node.hpp
+        src/scene_graph/mesh_node.cpp
+        src/scene_graph/mesh_node.hpp
+        src/scene_graph/light_node.cpp
+        src/scene_graph/light_node.hpp
 )
 
 add_subdirectory(${DEPENDENCY_DIR}/glad/)
