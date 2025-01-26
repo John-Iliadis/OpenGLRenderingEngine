@@ -39,13 +39,14 @@ static constexpr int sRemovePrimitives
 // todo: exception handling
 namespace ResourceImporter
 {
-    std::future<std::shared_ptr<LoadedModel>> loadModel(const std::filesystem::path &path, EnqueueCallback callback)
+    std::future<std::shared_ptr<LoadedModelData>> loadModel(const std::filesystem::path &path, EnqueueCallback callback)
     {
-        return std::async(std::launch::async, [path, callback] () -> std::shared_ptr<LoadedModel> {
+        return std::async(std::launch::async, [path, callback] () -> std::shared_ptr<LoadedModelData> {
             std::shared_ptr<aiScene> assimpScene = loadAssimpScene(path);
+            std::shared_ptr<LoadedModelData> model = std::make_shared<LoadedModelData>();
 
-            std::shared_ptr<LoadedModel> model = std::make_shared<LoadedModel>();
-            model->modelName = path.stem().string();
+            model->path = path;
+            model->modelName = path.filename().string();
             model->root = createModelGraph(*assimpScene->mRootNode);
 
             // load mesh data
@@ -69,7 +70,7 @@ namespace ResourceImporter
             for (uint32_t i = 0; i < assimpScene->mNumMaterials; ++i)
             {
                 const aiMaterial& assimpMaterial = *assimpScene->mMaterials[i];
-                LoadedModel::Material material = createMaterial(assimpMaterial, path.parent_path());
+                LoadedModelData::Material material = createMaterial(assimpMaterial, path.parent_path());
 
                 uniqueTexturePaths.insert(material.albedoTexturePath);
                 uniqueTexturePaths.insert(material.specularTexturePath);
@@ -86,7 +87,7 @@ namespace ResourceImporter
             uniqueTexturePaths.erase("");
 
             // load texture data
-            std::vector<std::future<std::shared_ptr<ImageLoader>>> loadedImageFutures;
+            std::vector<std::future<std::shared_ptr<LoadedImage>>> loadedImageFutures;
             for (const auto& texturePath : uniqueTexturePaths)
                 loadedImageFutures.push_back(createTextureData(texturePath));
 
@@ -105,7 +106,7 @@ namespace ResourceImporter
         });
     }
 
-    LoadedModel::Mesh createMesh(const MeshData &meshData)
+    LoadedModelData::Mesh createMesh(const MeshData &meshData)
     {
         return {
             .name = meshData.name,
@@ -114,7 +115,7 @@ namespace ResourceImporter
         };
     }
 
-    std::pair<std::filesystem::path, Texture2D> createTexturePair(const ImageLoader &loadedImage)
+    std::pair<std::filesystem::path, std::shared_ptr<Texture2D>> createTexturePair(const LoadedImage &loadedImage)
     {
         assert(loadedImage.success());
 
@@ -128,7 +129,7 @@ namespace ResourceImporter
             .generateMipMaps = true
         };
 
-        return std::make_pair(loadedImage.path(), Texture2D(textureSpecification, loadedImage.data()));
+        return std::make_pair(loadedImage.path(), std::make_shared<Texture2D>(textureSpecification, loadedImage.data()));
     }
 
     std::shared_ptr<aiScene> loadAssimpScene(const std::filesystem::path &path)
@@ -169,7 +170,7 @@ namespace ResourceImporter
 
     std::future<MeshData> createMeshData(const aiMesh &assimpMesh)
     {
-        debugLog(std::format("Loading mesh {}", assimpMesh.mName.C_Str()));
+        debugLog(std::format("ResourceImporter::createMeshData: Loading mesh {}", assimpMesh.mName.C_Str()));
         return std::async(std::launch::async, [&assimpMesh]() -> MeshData
         {
             return {
@@ -181,12 +182,12 @@ namespace ResourceImporter
         });
     }
 
-    std::future<std::shared_ptr<ImageLoader>> createTextureData(const std::filesystem::path &path)
+    std::future<std::shared_ptr<LoadedImage>> createTextureData(const std::filesystem::path &path)
     {
-        debugLog(std::format("ResourceImporter: Loading {}", path.string()));
-        return std::async(std::launch::async, [path]() -> std::shared_ptr<ImageLoader>
+        debugLog(std::format("ResourceImporter::createTextureData: Loading {}", path.string()));
+        return std::async(std::launch::async, [path]() -> std::shared_ptr<LoadedImage>
         {
-            std::shared_ptr<ImageLoader> loadedImage = std::make_shared<ImageLoader>(path.string());
+            std::shared_ptr<LoadedImage> loadedImage = std::make_shared<LoadedImage>(path.string());
 
             if (!loadedImage->success())
             {
@@ -197,7 +198,7 @@ namespace ResourceImporter
         });
     }
 
-    LoadedModel::Material createMaterial(const aiMaterial &assimpMaterial, const std::filesystem::path &directory)
+    LoadedModelData::Material createMaterial(const aiMaterial &assimpMaterial, const std::filesystem::path &directory)
     {
         auto texturePath = [&assimpMaterial, &directory](aiTextureType textureType) -> std::filesystem::path
         {
@@ -209,7 +210,7 @@ namespace ResourceImporter
             return directory / textureFilename;
         };
 
-        LoadedModel::Material material{
+        LoadedModelData::Material material {
             .name = assimpMaterial.GetName().C_Str(),
             .albedoTexturePath = texturePath(aiTextureType_DIFFUSE),
             .specularTexturePath = texturePath(aiTextureType_SPECULAR),

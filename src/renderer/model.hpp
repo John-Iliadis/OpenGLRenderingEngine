@@ -6,10 +6,12 @@
 #define OPENGLRENDERINGENGINE_MODEL_HPP
 
 #include <glm/glm.hpp>
+#include "../app/simple_notification_service.hpp"
 #include "instanced_mesh.hpp"
 
-struct Model
+class Model
 {
+public:
     struct Node
     {
         std::string name;
@@ -21,15 +23,25 @@ struct Model
     struct Mesh
     {
         std::shared_ptr<InstancedMesh> mesh;
-        std::string materialName;
+        uint32_t materialIndex;
     };
 
-    std::string name;
+public:
     Node root;
     std::vector<Mesh> meshes;
+    std::unordered_map<uint32_t, std::string> indirectMatIndexMap;
+    std::unordered_map<std::string, uint32_t> matNameToMatIndex;
 
-    // material name to resource material index
-    std::unordered_map<std::string, uint32_t> mappedMaterials;
+public:
+    void remapMaterial(const std::string& name, uint32_t materialIndex)
+    {
+        matNameToMatIndex.at(name) = materialIndex;
+    }
+
+    uint32_t getMaterialIndex(uint32_t materialIndex)
+    {
+        return matNameToMatIndex.at(indirectMatIndexMap.at(materialIndex));
+    }
 };
 
 #endif //OPENGLRENDERINGENGINE_MODEL_HPP

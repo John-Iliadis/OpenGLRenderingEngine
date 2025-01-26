@@ -15,11 +15,14 @@ using EnqueueCallback = std::function<void(std::function<void()>&&)>;
 
 namespace ResourceImporter
 {
-    std::future<std::shared_ptr<LoadedModel>> loadModel(const std::filesystem::path& path, EnqueueCallback callback);
+    // todo: fix scene graph
+    // todo: fix fbx texture paths
+    // todo: fix gltf texture paths
+    std::future<std::shared_ptr<LoadedModelData>> loadModel(const std::filesystem::path& path, EnqueueCallback callback);
 
-    LoadedModel::Mesh createMesh(const MeshData& meshData);
+    LoadedModelData::Mesh createMesh(const MeshData& meshData);
 
-    std::pair<std::filesystem::path, Texture2D> createTexturePair(const ImageLoader& loadedImage);
+    std::pair<std::filesystem::path, std::shared_ptr<Texture2D>> createTexturePair(const LoadedImage& loadedImage);
 
     std::shared_ptr<aiScene> loadAssimpScene(const std::filesystem::path& path);
 
@@ -27,9 +30,9 @@ namespace ResourceImporter
 
     std::future<MeshData> createMeshData(const aiMesh& assimpMesh);
 
-    std::future<std::shared_ptr<ImageLoader>> createTextureData(const std::filesystem::path& path);
+    std::future<std::shared_ptr<LoadedImage>> createTextureData(const std::filesystem::path& path);
 
-    LoadedModel::Material createMaterial(const aiMaterial& assimpMaterial, const std::filesystem::path& directory);
+    LoadedModelData::Material createMaterial(const aiMaterial& assimpMaterial, const std::filesystem::path& directory);
 
     std::vector<InstancedMesh::Vertex> loadMeshVertices(const aiMesh& mesh);
 

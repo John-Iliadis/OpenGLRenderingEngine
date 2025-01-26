@@ -40,8 +40,8 @@ void MeshNode::notify(const Message &message)
         };
 
         if (mMaterialIndex == m->deletedIndex)
-            updateMaterialIndex(m->defaultTextureIndex);
-        else if (mMaterialIndex == m->movedMaterialIndex)
+            updateMaterialIndex(m->defaultMaterialIndex);
+        else if (m->movedMaterialIndex.has_value() && mMaterialIndex == m->movedMaterialIndex)
             updateMaterialIndex(m->deletedIndex);
     }
 }

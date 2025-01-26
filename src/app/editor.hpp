@@ -10,10 +10,13 @@
 #include <imgui/imgui_internal.h>
 #include <imgui/imgui_impl_glfw.h>
 #include <imgui/imgui_impl_opengl3.h>
+#include "../utils.hpp"
 
 class Renderer;
 class ResourceManager;
 
+// todo: must delete nodes whose mesh has been deleted
+// todo: add subscribers to topics
 class Editor
 {
 public:
@@ -24,6 +27,11 @@ public:
     void render();
 
 private:
+    void mainMenuBar();
+    void assetPanel();
+    void sceneGraph();
+    void viewport();
+
     void imguiInit();
     void imguiTerminate();
     void imguiBegin();
@@ -32,6 +40,7 @@ private:
 private:
     std::shared_ptr<Renderer> mRenderer;
     std::shared_ptr<ResourceManager> mResourceManager;
+    // SceneGraph
 };
 
 #endif //OPENGLRENDERINGENGINE_EDITOR_HPP

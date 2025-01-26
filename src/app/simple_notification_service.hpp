@@ -11,26 +11,19 @@ public:
     struct MaterialDeleted
     {
         uint32_t deletedIndex;
-        uint32_t defaultTextureIndex;
+        uint32_t defaultMaterialIndex;
         std::optional<uint32_t> movedMaterialIndex;
     };
 
     struct TextureDeleted
     {
         uint32_t deletedIndex;
+        uint32_t defaultTextureIndex;
         std::optional<uint32_t> movedTextureIndex;
     };
 
-    struct ModelMaterialRemap
-    {
-        uint32_t modelID;
-        uint32_t meshID;
-        uint32_t materialIndex;
-    };
-
     std::variant<MaterialDeleted,
-        TextureDeleted,
-        ModelMaterialRemap> message;
+        TextureDeleted> message;
 
     template<typename T>
     Message(const T& message) : message(message) {}

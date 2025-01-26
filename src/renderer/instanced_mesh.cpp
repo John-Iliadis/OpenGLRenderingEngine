@@ -28,8 +28,9 @@ InstancedMesh::InstancedMesh(const std::vector<Vertex>& vertices, const std::vec
 
 uint32_t InstancedMesh::addInstance(const glm::mat4 &model, uint32_t id, uint32_t materialIndex)
 {
-    ++mInstanceCount;
     checkResize();
+
+    ++mInstanceCount;
 
     uint32_t instanceID = generateInstanceID();
     uint32_t instanceIndex = mInstanceCount - 1;
@@ -92,10 +93,10 @@ void InstancedMesh::removeInstance(uint32_t instanceID)
 
 void InstancedMesh::checkResize()
 {
-    if (mInstanceCount <= mInstanceBufferCapacity)
+    if (mInstanceCount < mInstanceBufferCapacity)
         return;
 
-    uint32_t newCapacity = sizeof(InstanceData) * glm::ceil(glm::log2(static_cast<float>(mInstanceCount)));
+    uint32_t newCapacity = sInstanceSize * glm::ceil(glm::log2(static_cast<float>(mInstanceCount)));
     VertexBuffer newInstanceBuffer(GL_DYNAMIC_DRAW, newCapacity, nullptr);
 
     glCopyNamedBufferSubData(mInstanceBuffer.id(),

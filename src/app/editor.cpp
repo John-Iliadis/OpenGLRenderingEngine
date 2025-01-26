@@ -3,6 +3,7 @@
 //
 
 #include "editor.hpp"
+#include "../resource/resource_manager.hpp"
 
 Editor::Editor(std::shared_ptr<Renderer> renderer, std::shared_ptr<ResourceManager> resourceManager)
     : mRenderer(renderer)
@@ -19,11 +20,64 @@ Editor::~Editor()
 void Editor::update(float dt)
 {
     imguiBegin();
+    mainMenuBar();
+    assetPanel();
+    sceneGraph();
+    viewport();
 }
 
 void Editor::render()
 {
     imguiEnd();
+}
+
+void Editor::mainMenuBar()
+{
+    if (ImGui::BeginMainMenuBar())
+    {
+        if (ImGui::BeginMenu("File"))
+        {
+            if (ImGui::MenuItem("ImportModel"))
+            {
+                std::filesystem::path path = fileDialog();
+
+                if (!path.empty())
+                    mResourceManager->importModel(path);
+            }
+
+            ImGui::EndMenu();
+        }
+
+        if (ImGui::BeginMenu("Settings"))
+        {
+            ImGui::EndMenu();
+        }
+
+        if (ImGui::BeginMenu("View"))
+        {
+            ImGui::EndMenu();
+        }
+
+        ImGui::EndMainMenuBar();
+    }
+}
+
+void Editor::assetPanel()
+{
+    ImGui::Begin("Assets");
+    ImGui::End();
+}
+
+void Editor::sceneGraph()
+{
+    ImGui::Begin("Scene Graph");
+    ImGui::End();
+}
+
+void Editor::viewport()
+{
+    ImGui::Begin("Viewport");
+    ImGui::End();
 }
 
 void Editor::imguiInit()
@@ -33,7 +87,6 @@ void Editor::imguiInit()
 
     ImGuiIO& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
     ImGui_ImplGlfw_InitForOpenGL(glfwGetCurrentContext(), true);
     ImGui_ImplOpenGL3_Init("#version 460 core");

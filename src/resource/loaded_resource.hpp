@@ -18,7 +18,7 @@ struct MeshData
     uint32_t materialIndex;
 };
 
-struct LoadedModel
+struct LoadedModelData
 {
     struct Mesh
     {
@@ -42,11 +42,12 @@ struct LoadedModel
         glm::vec4 emissionColor;
     };
 
+    std::filesystem::path path;
     std::string modelName;
     Model::Node root;
     std::vector<Mesh> meshes;
     std::vector<Material> materials;
-    std::unordered_map<std::filesystem::path, Texture2D> textures;
+    std::unordered_map<std::filesystem::path, std::shared_ptr<Texture2D>> textures;
 };
 
 #endif //OPENGLRENDERINGENGINE_LOADED_RESOURCE_HPP

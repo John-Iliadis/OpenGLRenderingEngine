@@ -9,8 +9,8 @@ static constexpr uint32_t sInitialWindowHeight = 1080;
 
 Application::Application()
     : mWindow(sInitialWindowWidth, sInitialWindowHeight)
-    , mRenderer()
-    , mResourceManager()
+    , mRenderer(std::make_shared<Renderer>())
+    , mResourceManager(std::make_shared<ResourceManager>())
     , mEditor(mRenderer, mResourceManager)
 {
     SimpleNotificationService::init();
@@ -45,11 +45,14 @@ void Application::handleEvents()
 
 void Application::update(float dt)
 {
+    mResourceManager->processMainThreadTasks();
+    mEditor.update(dt);
     countFPS(dt);
 }
 
 void Application::render()
 {
+    mEditor.render();
     mWindow.swapBuffers();
 }
 

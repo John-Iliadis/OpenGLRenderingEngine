@@ -119,6 +119,7 @@ private:
     uint32_t mRendererID;
 };
 
+// todo: abstract opengl enums
 class ShaderBuffer
 {
 public:

@@ -70,11 +70,6 @@ NodeType SceneNode::type() const
     return mType;
 }
 
-bool SceneNode::dirty() const
-{
-    return mDirty;
-}
-
 const std::string &SceneNode::name() const
 {
     return mName;

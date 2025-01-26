@@ -7,6 +7,18 @@
 
 #include <glm/glm.hpp>
 
+enum class MaterialTextureType : uint32_t
+{
+    Albedo = 0,
+    Specular,
+    Roughness,
+    Metallic,
+    Normal,
+    Displacement,
+    Ao,
+    Emission
+};
+
 enum class Workflow : uint32_t
 {
     Specular = 0,
