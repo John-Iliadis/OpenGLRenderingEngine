@@ -49,7 +49,7 @@ public:
     enum Type
     {
         None = 0,
-        ResourceManager,
+        Resource,
         Count
     };
 

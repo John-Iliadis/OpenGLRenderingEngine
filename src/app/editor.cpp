@@ -20,6 +20,7 @@ Editor::~Editor()
 void Editor::update(float dt)
 {
     imguiBegin();
+    ImGui::ShowDemoWindow();
     mainMenuBar();
     assetPanel();
     sceneGraph();

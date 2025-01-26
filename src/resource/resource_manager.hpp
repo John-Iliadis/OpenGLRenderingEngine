@@ -24,36 +24,44 @@ public:
     ResourceManager();
     ~ResourceManager();
 
-    void importModel(const std::filesystem::path& path);
+    bool importModel(const std::filesystem::path& path);
 
     void processMainThreadTasks();
 
 private:
     void addModel(std::shared_ptr<LoadedModelData> loadedModel);
 
-    void deleteModel(const std::filesystem::path& path);
+    void deleteModel(uint32_t modelIndex);
     void deleteMaterial(uint32_t materialIndex);
-    void deleteTexture(std::filesystem::path& path);
+    void deleteTexture(uint32_t textureIndex);
 
+    void loadDefaultTextures();
     void loadDefaultMaterial();
 
 private:
-    std::unordered_map<std::filesystem::path, std::shared_ptr<Model>> mModels;
+    // All models
+    std::vector<std::shared_ptr<Model>> mModels;
+    std::unordered_map<std::shared_ptr<Model>, std::filesystem::path> mModelPaths;
     std::unordered_map<std::shared_ptr<Model>, ModelMetaData> mModelMetaData;
 
+    // All meshes
     std::vector<std::shared_ptr<InstancedMesh>> mMeshes;
     std::unordered_map<std::shared_ptr<InstancedMesh>, MeshMetaData> mMeshMetaData;
 
-    std::unordered_map<std::filesystem::path, std::shared_ptr<Texture2D>> mTextures;
+    // All textures
+    std::vector<std::shared_ptr<Texture2D>> mTextures;
+    std::unordered_map<std::shared_ptr<Texture2D>, std::filesystem::path> mTexturePaths;
     std::unordered_map<std::shared_ptr<Texture2D>, TextureMetaData> mTextureMetaData;
     std::unordered_map<std::shared_ptr<Texture2D>, uint64_t> mBindlessTextureMap;
     std::vector<uint64_t> mBindlessTextures;
     ShaderBuffer mBindlessTextureSSBO;
 
+    // All materials
     std::vector<Material> mMaterials;
     std::unordered_map<Material*, MaterialMetaData> mMaterialMetaData;
     ShaderBuffer mMaterialsSSBO;
 
+    // Async Loading
     std::vector<std::future<std::shared_ptr<LoadedModelData>>> mLoadedModelFutures;
     MainThreadTaskQueue mTaskQueue;
 

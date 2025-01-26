@@ -6,21 +6,17 @@
 
 MeshNode::MeshNode()
     : SceneNode()
-    , mModelID()
-    , mMaterialIndex()
-    , mModifiedMaterial()
     , mMesh()
+    , mMaterialIndex()
     , mInstanceID()
 {
 }
 
 MeshNode::MeshNode(NodeType type, const std::string &name, SceneNode *parent,
-                   uint32_t modelID, uint32_t materialIndex, std::shared_ptr<InstancedMesh> mesh)
+                   uint32_t materialIndex, std::shared_ptr<InstancedMesh> mesh)
     : SceneNode(type, name, parent)
-    , mModelID(modelID)
-    , mMaterialIndex(materialIndex)
     , mMesh(mesh)
-    , mModifiedMaterial()
+    , mMaterialIndex(materialIndex)
     , mInstanceID(mesh->addInstance(mGlobalTransform, mID, mMaterialIndex))
 {
 }

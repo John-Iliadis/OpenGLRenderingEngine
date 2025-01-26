@@ -366,7 +366,7 @@ void Texture2D::create()
         glTextureParameterf(mRendererID, GL_TEXTURE_MAX_ANISOTROPY, glm::min(16.f, maxAnisotropy));
     }
 
-    uint32_t mipLevels = 0;
+    uint32_t mipLevels = 1;
     if (mSpecification.generateMipMaps)
         mipLevels = calculateMipLevels(mSpecification.width, mSpecification.height);
 

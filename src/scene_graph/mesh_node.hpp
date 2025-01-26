@@ -12,17 +12,15 @@ class MeshNode : public SceneNode
 public:
     MeshNode();
     MeshNode(NodeType type, const std::string& name, SceneNode* parent,
-             uint32_t modelID, uint32_t materialIndex, std::shared_ptr<InstancedMesh> mesh);
+             uint32_t materialIndex, std::shared_ptr<InstancedMesh> mesh);
     ~MeshNode();
 
     void notify(const Message &message) override;
     void updateGlobalTransform() override;
 
 private:
-    uint32_t mModelID;
-    uint32_t mMaterialIndex;
-    bool mModifiedMaterial;
     std::shared_ptr<InstancedMesh> mMesh;
+    uint32_t mMaterialIndex;
     uint32_t mInstanceID;
 };
 

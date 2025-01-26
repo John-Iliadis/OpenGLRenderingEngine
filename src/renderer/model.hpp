@@ -6,7 +6,6 @@
 #define OPENGLRENDERINGENGINE_MODEL_HPP
 
 #include <glm/glm.hpp>
-#include "../app/simple_notification_service.hpp"
 #include "instanced_mesh.hpp"
 
 class Model
@@ -30,17 +29,17 @@ public:
     Node root;
     std::vector<Mesh> meshes;
     std::unordered_map<uint32_t, std::string> indirectMatIndexMap;
-    std::unordered_map<std::string, uint32_t> matNameToMatIndex;
+    std::unordered_map<std::string, uint32_t> mappedMaterials;
 
 public:
     void remapMaterial(const std::string& name, uint32_t materialIndex)
     {
-        matNameToMatIndex.at(name) = materialIndex;
+        mappedMaterials.at(name) = materialIndex;
     }
 
-    uint32_t getMaterialIndex(uint32_t materialIndex)
+    uint32_t getMaterialIndex(uint32_t materialIndex) const
     {
-        return matNameToMatIndex.at(indirectMatIndexMap.at(materialIndex));
+        return mappedMaterials.at(indirectMatIndexMap.at(materialIndex));
     }
 };
 
