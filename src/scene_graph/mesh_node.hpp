@@ -18,6 +18,8 @@ public:
     void notify(const Message &message) override;
     void updateGlobalTransform() override;
 
+    std::shared_ptr<InstancedMesh> mesh() const;
+
 private:
     std::shared_ptr<InstancedMesh> mMesh;
     uint32_t mMaterialIndex;

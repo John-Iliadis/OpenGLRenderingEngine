@@ -35,6 +35,7 @@ private:
     void deleteModel(uint32_t modelIndex);
     void deleteMaterial(uint32_t materialIndex);
     void deleteTexture(uint32_t textureIndex);
+
     void checkUpdateMaterial(uint32_t removedTexIndex, std::optional<uint32_t> movedTexIndex);
 
     void loadDefaultTextures();
@@ -43,8 +44,8 @@ private:
 private:
     // All models
     std::vector<std::shared_ptr<Model>> mModels;
-    std::unordered_map<std::shared_ptr<Model>, std::filesystem::path> mModelPaths;
     std::unordered_map<std::shared_ptr<Model>, ModelMetaData> mModelMetaData;
+    std::unordered_map<std::shared_ptr<Model>, std::filesystem::path> mModelPaths;
 
     // All meshes
     std::vector<std::shared_ptr<InstancedMesh>> mMeshes;

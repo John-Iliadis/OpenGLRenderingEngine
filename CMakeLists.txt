@@ -60,6 +60,8 @@ add_executable(${PROJECT_NAME}
         src/scene_graph/mesh_node.hpp
         src/scene_graph/light_node.cpp
         src/scene_graph/light_node.hpp
+        src/scene_graph/scene_graph.cpp
+        src/scene_graph/scene_graph.hpp
 )
 
 add_subdirectory(${DEPENDENCY_DIR}/glad/)

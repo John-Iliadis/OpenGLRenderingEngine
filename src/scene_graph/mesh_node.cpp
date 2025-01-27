@@ -62,3 +62,8 @@ void MeshNode::updateGlobalTransform()
     for (auto child : mChildren)
         child->updateGlobalTransform();
 }
+
+std::shared_ptr<InstancedMesh> MeshNode::mesh() const
+{
+    return mMesh;
+}

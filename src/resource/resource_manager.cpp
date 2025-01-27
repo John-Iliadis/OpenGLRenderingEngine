@@ -143,23 +143,52 @@ void ResourceManager::addModel(std::shared_ptr<LoadedModelData> loadedModel)
 
 void ResourceManager::deleteModel(uint32_t modelIndex)
 {
-    /* Todo list
-     * remove all the nodes that use any of the deleted meshes and all their children
-     * remove the model from the mModels list
-     * remove the model meta data
-     * remove all the meshes that are used by the mode from mMeshes
-     * remove the mesh meta data used by the model
-     * */
+    std::shared_ptr<Model> model = mModels.at(modelIndex);
+
+    // remove model, model meta data, and path
+    mModels.erase(mModels.begin() + modelIndex);
+    mModelPaths.erase(model);
+    mModelMetaData.erase(model);
+
+    // remove all model meshes from mMeshes
+
+    std::unordered_set<std::shared_ptr<InstancedMesh>> meshesToRemove;
+    for (const auto& mesh : model->meshes)
+        meshesToRemove.insert(mesh.mesh);
+
+    mMeshes.erase(std::remove_if(mMeshes.begin(), mMeshes.end(),
+                                 [&meshesToRemove] (std::shared_ptr<InstancedMesh> m) {
+                                     return meshesToRemove.contains(m);
+                                 }));
+
+    // send message
+    Message message((Message::ModelDeleted(meshesToRemove)));
+    SimpleNotificationService::publishMessage(Topic::Resource, message);
 }
 
 void ResourceManager::deleteMaterial(uint32_t materialIndex)
 {
-    /* Todo list
-     * Remove the material from the materials vector and reformat the material array (fill deleted elements spot with the last material)
-     * Remove the material meta data
-     * Update the materials SSBO
-     * Assign the default material to all the nodes that use that material. Additionally, update the material index for all the nodes that used the moved index.
-     * */
+    // remove material meta data
+    mMaterialMetaData.erase(&mMaterials.at(materialIndex));
+
+    // remove material from the array. Prevent fragmentation.
+    uint32_t lastIndex = mMaterials.size() - 1;
+    std::optional<uint32_t> movedMaterialIndex;
+
+    if (materialIndex != lastIndex)
+    {
+        std::swap(mMaterials.at(lastIndex), mMaterials.at(materialIndex));
+        movedMaterialIndex = lastIndex;
+    }
+
+    mMaterials.pop_back();
+
+    // send material deleted message
+    Message materialDeletedMessage(Message::MaterialDeleted(materialIndex, 0, movedMaterialIndex));
+    SimpleNotificationService::publishMessage(Topic::Resource, materialDeletedMessage);
+
+    // update material SSBO
+    mMaterialsSSBO.update(0, mMaterials.size() * sizeof(Material), mMaterials.data());
 }
 
 void ResourceManager::deleteTexture(uint32_t textureIndex)
@@ -173,11 +202,12 @@ void ResourceManager::deleteTexture(uint32_t textureIndex)
     mTexturePaths.erase(texture);
     mTextureMetaData.erase(texture);
 
-    // remove the bindless texture, make it nonresident, and reformat the bindless texture vector
+    // make texture nonresident
     uint64_t gpuTextureHandle = mBindlessTextureMap.at(texture);
     mBindlessTextureMap.erase(texture);
     glMakeTextureHandleNonResidentARB(gpuTextureHandle);
 
+    // remove the bindless texture from the array. Prevent fragmentation.
     uint32_t textureCount = mBindlessTextures.size();
     uint32_t removedTextureIndex = UINT32_MAX;
     std::optional<uint32_t> movedTextureIndex;
@@ -191,11 +221,11 @@ void ResourceManager::deleteTexture(uint32_t textureIndex)
     {
         uint32_t lastIndex = textureCount - 1;
         std::swap(mBindlessTextures.at(lastIndex), mBindlessTextures.at(removedTextureIndex));
-        mBindlessTextures.pop_back();
         movedTextureIndex = lastIndex;
-    }
-    else
         mBindlessTextures.pop_back();
+    }
+
+    mBindlessTextures.pop_back();
 
     // update materials that might be using the deleted textures
     checkUpdateMaterial(removedTextureIndex, movedTextureIndex);
@@ -203,6 +233,35 @@ void ResourceManager::deleteTexture(uint32_t textureIndex)
     // update gpu buffers
     mMaterialsSSBO.update(0, mMaterials.size() * sizeof(Material), mMaterials.data());
     mBindlessTextureSSBO.update(0, mBindlessTextures.size() * sizeof(uint64_t), mBindlessTextures.data());
+}
+
+void ResourceManager::checkUpdateMaterial(uint32_t removedTexIndex, std::optional<uint32_t> movedTexIndex)
+{
+    auto checkIndex = [removedTexIndex, movedTexIndex] (uint32_t index, MaterialTextureType type) {
+        if (index == removedTexIndex)
+        {
+            return static_cast<uint32_t>(type);
+        }
+
+        if (movedTexIndex.has_value() &&  index == movedTexIndex)
+        {
+            return removedTexIndex;
+        }
+
+        return index;
+    };
+
+    for (auto& material : mMaterials)
+    {
+        material.albedoMapIndex = checkIndex(material.albedoMapIndex, MaterialTextureType::Albedo);
+        material.specularMapIndex = checkIndex(material.specularMapIndex, MaterialTextureType::Specular);
+        material.roughnessMapIndex = checkIndex(material.roughnessMapIndex, MaterialTextureType::Roughness);
+        material.metallicMapIndex = checkIndex(material.metallicMapIndex, MaterialTextureType::Metallic);
+        material.normalMapIndex = checkIndex(material.normalMapIndex, MaterialTextureType::Normal);
+        material.displacementMapIndex = checkIndex(material.displacementMapIndex, MaterialTextureType::Displacement);
+        material.aoMapIndex = checkIndex(material.aoMapIndex, MaterialTextureType::Ao);
+        material.emissionMapIndex = checkIndex(material.emissionMapIndex, MaterialTextureType::Emission);
+    }
 }
 
 void ResourceManager::loadDefaultTextures()
@@ -304,33 +363,4 @@ void ResourceManager::loadDefaultMaterial()
     mMaterials.push_back(material);
 
     mMaterialsSSBO.update(0, sizeof(Material), mMaterials.data());
-}
-
-void ResourceManager::checkUpdateMaterial(uint32_t removedTexIndex, std::optional<uint32_t> movedTexIndex)
-{
-    auto checkIndex = [removedTexIndex, movedTexIndex] (uint32_t index, MaterialTextureType type) {
-        if (index == removedTexIndex)
-        {
-            return static_cast<uint32_t>(type);
-        }
-
-        if (movedTexIndex.has_value() &&  index == movedTexIndex)
-        {
-            return removedTexIndex;
-        }
-
-        return index;
-    };
-
-    for (auto& material : mMaterials)
-    {
-        material.albedoMapIndex = checkIndex(material.albedoMapIndex, MaterialTextureType::Albedo);
-        material.specularMapIndex = checkIndex(material.specularMapIndex, MaterialTextureType::Specular);
-        material.roughnessMapIndex = checkIndex(material.roughnessMapIndex, MaterialTextureType::Roughness);
-        material.metallicMapIndex = checkIndex(material.metallicMapIndex, MaterialTextureType::Metallic);
-        material.normalMapIndex = checkIndex(material.normalMapIndex, MaterialTextureType::Normal);
-        material.displacementMapIndex = checkIndex(material.displacementMapIndex, MaterialTextureType::Displacement);
-        material.aoMapIndex = checkIndex(material.aoMapIndex, MaterialTextureType::Ao);
-        material.emissionMapIndex = checkIndex(material.emissionMapIndex, MaterialTextureType::Emission);
-    }
 }

@@ -5,6 +5,8 @@
 #ifndef OPENGLRENDERINGENGINE_SIMPLE_NOTIFICATION_SERVICE_HPP
 #define OPENGLRENDERINGENGINE_SIMPLE_NOTIFICATION_SERVICE_HPP
 
+#include "../renderer/instanced_mesh.hpp"
+
 class Message
 {
 public:
@@ -22,8 +24,14 @@ public:
         std::optional<uint32_t> movedTextureIndex;
     };
 
+    struct ModelDeleted
+    {
+        std::unordered_set<std::shared_ptr<InstancedMesh>> removedMeshes;
+    };
+
     std::variant<MaterialDeleted,
-        TextureDeleted> message;
+        TextureDeleted,
+        ModelDeleted> message;
 
     template<typename T>
     Message(const T& message) : message(message) {}
