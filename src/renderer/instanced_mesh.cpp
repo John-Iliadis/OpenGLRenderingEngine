@@ -66,11 +66,11 @@ void InstancedMesh::updateInstance(uint32_t instanceID, const glm::mat4 &model, 
 
 void InstancedMesh::removeInstance(uint32_t instanceID)
 {
-    // edge case: Only one instance left or last instance in buffer
+    // edge case:  last instance in buffer
     uint32_t removeIndex = mInstanceIdToIndexMap.at(instanceID);
     mInstanceIdToIndexMap.erase(instanceID);
 
-    if (mInstanceCount == 1 || removeIndex == mInstanceCount - 1)
+    if (removeIndex == mInstanceCount - 1)
     {
         --mInstanceCount;
         mInstanceIndexToIdMap.erase(removeIndex);

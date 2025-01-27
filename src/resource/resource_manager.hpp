@@ -8,6 +8,7 @@
 #include <glad/glad.h>
 #include "../opengl/shader.hpp"
 #include "../renderer/material.hpp"
+#include "../app/simple_notification_service.hpp"
 #include "resource_importer.hpp"
 
 class Editor;
@@ -34,6 +35,7 @@ private:
     void deleteModel(uint32_t modelIndex);
     void deleteMaterial(uint32_t materialIndex);
     void deleteTexture(uint32_t textureIndex);
+    void checkUpdateMaterial(uint32_t removedTexIndex, std::optional<uint32_t> movedTexIndex);
 
     void loadDefaultTextures();
     void loadDefaultMaterial();

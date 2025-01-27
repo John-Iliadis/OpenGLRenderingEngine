@@ -164,14 +164,45 @@ void ResourceManager::deleteMaterial(uint32_t materialIndex)
 
 void ResourceManager::deleteTexture(uint32_t textureIndex)
 {
-    /* Todo list
-     * Remove the texture from mTextures
-     * Remove the texture metadata
-     * Remove the bindless texture from mBindless textures and reformat the vector
-     * Delete the bindless texture
-     * Update the bindless texture SSBO
-     * Update all the materials that use that texture
-     * */
+    assert(textureIndex < mTextures.size());
+
+    std::shared_ptr<Texture2D> texture = mTextures.at(textureIndex);
+
+    // remove texture, the texture path, and texture metadata
+    mTextures.erase(mTextures.begin() + textureIndex);
+    mTexturePaths.erase(texture);
+    mTextureMetaData.erase(texture);
+
+    // remove the bindless texture, make it nonresident, and reformat the bindless texture vector
+    uint64_t gpuTextureHandle = mBindlessTextureMap.at(texture);
+    mBindlessTextureMap.erase(texture);
+    glMakeTextureHandleNonResidentARB(gpuTextureHandle);
+
+    uint32_t textureCount = mBindlessTextures.size();
+    uint32_t removedTextureIndex = UINT32_MAX;
+    std::optional<uint32_t> movedTextureIndex;
+
+    for (uint32_t i = 0; i < textureCount; ++i)
+        if (gpuTextureHandle == mBindlessTextures.at(i))
+            removedTextureIndex = i;
+    assert(removedTextureIndex != UINT32_MAX);
+
+    if (removedTextureIndex != textureCount - 1)
+    {
+        uint32_t lastIndex = textureCount - 1;
+        std::swap(mBindlessTextures.at(lastIndex), mBindlessTextures.at(removedTextureIndex));
+        mBindlessTextures.pop_back();
+        movedTextureIndex = lastIndex;
+    }
+    else
+        mBindlessTextures.pop_back();
+
+    // update materials that might be using the deleted textures
+    checkUpdateMaterial(removedTextureIndex, movedTextureIndex);
+
+    // update gpu buffers
+    mMaterialsSSBO.update(0, mMaterials.size() * sizeof(Material), mMaterials.data());
+    mBindlessTextureSSBO.update(0, mBindlessTextures.size() * sizeof(uint64_t), mBindlessTextures.data());
 }
 
 void ResourceManager::loadDefaultTextures()
@@ -273,4 +304,33 @@ void ResourceManager::loadDefaultMaterial()
     mMaterials.push_back(material);
 
     mMaterialsSSBO.update(0, sizeof(Material), mMaterials.data());
+}
+
+void ResourceManager::checkUpdateMaterial(uint32_t removedTexIndex, std::optional<uint32_t> movedTexIndex)
+{
+    auto checkIndex = [removedTexIndex, movedTexIndex] (uint32_t index, MaterialTextureType type) {
+        if (index == removedTexIndex)
+        {
+            return static_cast<uint32_t>(type);
+        }
+
+        if (movedTexIndex.has_value() &&  index == movedTexIndex)
+        {
+            return removedTexIndex;
+        }
+
+        return index;
+    };
+
+    for (auto& material : mMaterials)
+    {
+        material.albedoMapIndex = checkIndex(material.albedoMapIndex, MaterialTextureType::Albedo);
+        material.specularMapIndex = checkIndex(material.specularMapIndex, MaterialTextureType::Specular);
+        material.roughnessMapIndex = checkIndex(material.roughnessMapIndex, MaterialTextureType::Roughness);
+        material.metallicMapIndex = checkIndex(material.metallicMapIndex, MaterialTextureType::Metallic);
+        material.normalMapIndex = checkIndex(material.normalMapIndex, MaterialTextureType::Normal);
+        material.displacementMapIndex = checkIndex(material.displacementMapIndex, MaterialTextureType::Displacement);
+        material.aoMapIndex = checkIndex(material.aoMapIndex, MaterialTextureType::Ao);
+        material.emissionMapIndex = checkIndex(material.emissionMapIndex, MaterialTextureType::Emission);
+    }
 }
