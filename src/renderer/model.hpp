@@ -14,20 +14,21 @@ public:
     struct Node
     {
         std::string name;
-        glm::mat4 model;
-        std::vector<uint32_t> meshes;
-        std::vector<Node> children;
+        glm::mat4 transformation;
+        std::optional<uint32_t> mesh;
+        std::vector<uint32_t> children;
     };
 
     struct Mesh
     {
-        std::shared_ptr<InstancedMesh> mesh;
+        uint32_t meshIndex;
         uint32_t materialIndex;
     };
 
 public:
     Node root;
     std::vector<Mesh> meshes;
+    std::unordered_map<uint32_t, uint32_t> indirectMeshMap;
     std::unordered_map<uint32_t, std::string> indirectMatIndexMap;
     std::unordered_map<std::string, uint32_t> mappedMaterials;
 
@@ -37,9 +38,14 @@ public:
         mappedMaterials.at(name) = materialIndex;
     }
 
-    uint32_t getMaterialIndex(uint32_t materialIndex) const
+    uint32_t getMaterialIndex(uint32_t meshIndex) const
     {
-        return mappedMaterials.at(indirectMatIndexMap.at(materialIndex));
+        return mappedMaterials.at(indirectMatIndexMap.at(meshes.at(meshIndex).materialIndex));
+    }
+
+    uint32_t getMeshIndex(uint32_t meshIndex) const
+    {
+        return indirectMeshMap.at(meshIndex);
     }
 };
 
