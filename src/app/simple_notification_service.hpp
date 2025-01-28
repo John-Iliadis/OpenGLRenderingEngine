@@ -10,37 +10,65 @@
 class Message
 {
 public:
+    struct ModelDeleted
+    {
+        uint32_t modelID;
+        std::vector<uint32_t> meshIDs;
+    };
+
     struct MaterialDeleted
     {
-        uint32_t deletedIndex;
-        uint32_t defaultMaterialIndex;
-        std::optional<uint32_t> movedMaterialIndex;
+        uint32_t removeIndex;
+        std::optional<uint32_t> transferIndex;
     };
 
     struct TextureDeleted
     {
-        uint32_t deletedIndex;
-        uint32_t defaultTextureIndex;
-        std::optional<uint32_t> movedTextureIndex;
+        uint32_t removedIndex;
+        std::optional<uint32_t> transferIndex;
     };
 
-    struct ModelDeleted
+    struct MeshInstanceUpdate
     {
-        std::unordered_set<std::shared_ptr<InstancedMesh>> removedMeshes;
+        uint32_t meshID;
+        uint32_t objectID;
+        uint32_t instanceID;
+        uint32_t materialIndex;
+        glm::mat4 transformation;
     };
 
-    std::variant<MaterialDeleted,
+    struct MaterialRemap
+    {
+        uint32_t meshID;
+        uint32_t materialIndex;
+    };
+
+    std::variant<ModelDeleted,
+        MaterialDeleted,
         TextureDeleted,
-        ModelDeleted> message;
+        MeshInstanceUpdate,
+        MaterialRemap> message;
 
     template<typename T>
     Message(const T& message) : message(message) {}
+
+    template <typename T, typename... Args>
+    Message(std::in_place_type_t<T>, Args&&... args)
+        : message(std::in_place_type<T>, std::forward<Args>(args)...)
+    {
+    }
 
     template<typename T>
     T* getIf() { return std::get_if<T>(&message); }
 
     template<typename T>
     const T* getIf() const { return std::get_if<T>(&message); }
+
+    template<typename T, typename... Args>
+    static Message create(Args&&... args)
+    {
+        return Message(std::in_place_type<T>, std::forward<Args>(args)...);
+    }
 };
 
 class SubscriberSNS
@@ -62,23 +90,19 @@ public:
     };
 
 public:
-    Topic();
-    Topic(Type topicType);
+    Topic() = default;
 
     void addSubscriber(SubscriberSNS* subscriber);
     void removeSubscriber(SubscriberSNS* subscriber);
-
-    const std::unordered_set<SubscriberSNS*>& subscriberList() const;
+    void publish(const Message& message);
 
 private:
-    Type mType;
     std::unordered_set<SubscriberSNS*> mSubscribers;
 };
 
 class SimpleNotificationService
 {
 public:
-    static void init();
     static void subscribe(Topic::Type topicType, SubscriberSNS* subscriber);
     static void unsubscribe(Topic::Type topicType, SubscriberSNS* subscriber);
     static void publishMessage(Topic::Type topicType, const Message& message);

@@ -4,16 +4,6 @@
 
 #include "simple_notification_service.hpp"
 
-Topic::Topic()
-    : mType(Topic::Type::None)
-{
-}
-
-Topic::Topic(Topic::Type topicType)
-    : mType(topicType)
-{
-}
-
 void Topic::addSubscriber(SubscriberSNS *subscriber)
 {
     mSubscribers.insert(subscriber);
@@ -24,15 +14,10 @@ void Topic::removeSubscriber(SubscriberSNS *subscriber)
     mSubscribers.erase(subscriber);
 }
 
-const std::unordered_set<SubscriberSNS*>& Topic::subscriberList() const
+void Topic::publish(const Message &message)
 {
-    return mSubscribers;
-}
-
-void SimpleNotificationService::init()
-{
-    for (uint32_t i = 0; i < Topic::Type::Count; ++i)
-        mTopics.at(i) = Topic(static_cast<Topic::Type>(i));
+    for (auto subscriber : mSubscribers)
+        subscriber->notify(message);
 }
 
 void SimpleNotificationService::subscribe(Topic::Type topicType, SubscriberSNS *subscriber)
@@ -47,8 +32,5 @@ void SimpleNotificationService::unsubscribe(Topic::Type topicType, SubscriberSNS
 
 void SimpleNotificationService::publishMessage(Topic::Type topicType, const Message& message)
 {
-    for (SubscriberSNS* subscriber : mTopics.at(topicType).subscriberList())
-    {
-        subscriber->notify(message);
-    }
+    mTopics.at(topicType).publish(message);
 }
