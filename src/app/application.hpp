@@ -8,9 +8,9 @@
 #include "../window/window.hpp"
 #include "../renderer/renderer.hpp"
 #include "../resource/resource_manager.hpp"
-#include "simple_notification_service.hpp"
 #include "editor.hpp"
 
+// todo: wait events on window minification
 class Application
 {
 public:

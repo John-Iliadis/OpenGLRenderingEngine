@@ -23,7 +23,7 @@ class SceneNode : public SubscriberSNS
 {
 public:
     SceneNode();
-    SceneNode(NodeType type, const std::string& name, SceneNode* parent);
+    SceneNode(NodeType type, const std::string& name, const glm::mat4& transformation, SceneNode* parent);
     virtual ~SceneNode();
 
     void setParent(SceneNode* parent);

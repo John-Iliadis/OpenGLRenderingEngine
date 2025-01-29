@@ -16,7 +16,7 @@ public:
         std::string name;
         glm::mat4 transformation;
         std::optional<uint32_t> mesh;
-        std::vector<uint32_t> children;
+        std::vector<Node> children;
     };
 
     struct Mesh
@@ -28,9 +28,9 @@ public:
 public:
     Node root;
     std::vector<Mesh> meshes;
-    std::unordered_map<uint32_t, uint32_t> indirectMeshMap;
-    std::unordered_map<uint32_t, std::string> indirectMatIndexMap;
-    std::unordered_map<std::string, uint32_t> mappedMaterials;
+    std::unordered_map<uint32_t, uint32_t> indirectMeshMap; // Model::Mesh::meshIndex -> ResourceManager::mMeshes
+    std::unordered_map<uint32_t, std::string> indirectMaterialMap; // Model::Mesh::materialIndex -> Model::mappedMaterials
+    std::unordered_map<std::string, uint32_t> mappedMaterials; // mappedMaterials -> ResourceManager::mMaterials
 
 public:
     void remapMaterial(const std::string& name, uint32_t materialIndex)
@@ -40,7 +40,7 @@ public:
 
     uint32_t getMaterialIndex(uint32_t meshIndex) const
     {
-        return mappedMaterials.at(indirectMatIndexMap.at(meshes.at(meshIndex).materialIndex));
+        return mappedMaterials.at(indirectMaterialMap.at(meshes.at(meshIndex).materialIndex));
     }
 
     uint32_t getMeshIndex(uint32_t meshIndex) const

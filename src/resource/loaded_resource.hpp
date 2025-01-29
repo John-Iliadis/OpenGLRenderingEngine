@@ -30,24 +30,29 @@ struct LoadedModelData
     struct Material
     {
         std::string name;
-        std::filesystem::path albedoTexturePath;
-        std::filesystem::path specularTexturePath;
-        std::filesystem::path roughnessTexturePath;
-        std::filesystem::path metallicTexturePath;
-        std::filesystem::path normalTexturePath;
-        std::filesystem::path displacementTexturePath;
-        std::filesystem::path aoTexturePath;
-        std::filesystem::path emissionTexturePath;
-        glm::vec4 albedoColor;
-        glm::vec4 emissionColor;
+        int32_t baseColorMapIndex = -1;
+        int32_t metallicRoughnessMapIndex = -1;
+        int32_t normalMapIndex = -1;
+        int32_t aoMapIndex = -1;
+        int32_t emissionMapIndex = -1;
+        int32_t specularGlossinessMapIndex = -1;
+        int32_t displacementMapIndex = -1;
+        glm::vec4 baseColorFactor = glm::vec4(1.f);
+        glm::vec4 emissionFactor = glm::vec4(0.f);
+        glm::vec4 specularGlossinessFactor = glm::vec4(1.f);
+        float metallicFactor = 1.f;
+        float roughnessFactor = 1.f;
+        float occlusionFactor = 1.f;
+        float specularFactor = 1.f;
     };
 
     std::filesystem::path path;
-    std::string modelName;
+    std::string name;
     Model::Node root;
     std::vector<Mesh> meshes;
     std::vector<Material> materials;
-    std::unordered_map<std::filesystem::path, std::shared_ptr<Texture2D>> textures;
+    std::vector<std::pair<std::shared_ptr<Texture2D>, std::filesystem::path>> textures;
+    std::unordered_map<int32_t, int32_t> indirectTextureMap;
 };
 
 #endif //OPENGLRENDERINGENGINE_LOADED_RESOURCE_HPP

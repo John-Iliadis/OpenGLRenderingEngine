@@ -47,6 +47,15 @@ std::filesystem::path fileDialog()
     return {};
 }
 
+std::string fileExtension(const std::filesystem::path& path)
+{
+    std::string extension = path.extension().string();
+
+    std::transform(extension.begin(), extension.end(), extension.begin(), tolower);
+
+    return extension;
+}
+
 void MainThreadTaskQueue::push(Task &&task)
 {
     std::lock_guard<std::mutex> lock(mTaskQueueMutex);

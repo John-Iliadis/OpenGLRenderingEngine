@@ -13,7 +13,6 @@ Application::Application()
     , mResourceManager(std::make_shared<ResourceManager>())
     , mEditor(mRenderer, mResourceManager)
 {
-    SimpleNotificationService::init();
 }
 
 Application::~Application()

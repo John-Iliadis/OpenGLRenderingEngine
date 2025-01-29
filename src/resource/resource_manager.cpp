@@ -19,6 +19,13 @@ static bool resourceLoaded(const std::unordered_map<T, std::filesystem::path>& r
     });
 }
 
+template <typename T>
+static uint32_t sharedPtrHash(const std::shared_ptr<T> ptr) { return std::hash<std::shared_ptr<T>>()(ptr); }
+
+uint32_t getModelID(const std::shared_ptr<Model> model) { return sharedPtrHash(model); }
+uint32_t getMeshID(const std::shared_ptr<InstancedMesh> mesh) { return sharedPtrHash(mesh); }
+uint32_t getTextureID(const std::shared_ptr<Texture2D> texture) { return sharedPtrHash(texture); }
+
 ResourceManager::ResourceManager()
     : mBindlessTextureSSBO(GL_SHADER_STORAGE_BUFFER, GL_DYNAMIC_DRAW, 1, 1024 * sizeof(uint64_t), nullptr)
     , mMaterialsSSBO(GL_SHADER_STORAGE_BUFFER, GL_DYNAMIC_DRAW, 2, 256 * sizeof(Material), nullptr)
@@ -66,74 +73,96 @@ void ResourceManager::processMainThreadTasks()
 }
 
 // todo: check if workflow is metallic or specular
-void ResourceManager::addModel(std::shared_ptr<LoadedModelData> loadedModel)
+void ResourceManager::addModel(std::shared_ptr<LoadedModelData> modelData)
 {
+    // create model
     std::shared_ptr<Model> model = std::make_shared<Model>();
 
-    mModels.push_back(model);
-    mModelPaths.emplace(model, loadedModel->path);
-    mModelMetaData.emplace(model, loadedModel->modelName);
+    model->root = std::move(modelData->root);
+    uint32_t modelID = getModelID(model);
 
-    model->root = std::move(loadedModel->root);
-
-    // load meshes
-    for (const auto& loadedMesh : loadedModel->meshes)
-    {
-        model->meshes.emplace_back(loadedMesh.mesh, loadedMesh.materialIndex);
-        mMeshes.push_back(loadedMesh.mesh);
-        mMeshMetaData.emplace(loadedMesh.mesh, loadedMesh.name);
-    }
+    mModels.emplace(modelID, model);
+    mModelMetaData.emplace(modelID, modelData->name);
+    mModelPaths.emplace(modelID, modelData->path);
 
     // load textures
-    std::unordered_map<std::filesystem::path, uint32_t> texturePathToIndex;
-    for (const auto& [texturePath, texture] : loadedModel->textures)
+    std::unordered_map<uint32_t, uint32_t> insertedTextureIndexMap; // loaded texture index -> resource index
+    for (uint32_t i = 0; i < modelData->textures.size(); ++i)
     {
-        // make bindless texture
+        const auto& [texture, texturePath] = modelData->textures.at(i);
+
+        uint32_t textureID = getTextureID(texture);
+        mTextures.emplace(textureID, texture);
+        mTextureMetaData.emplace(textureID, texturePath.filename().string());
+        mTexturePaths.emplace(textureID, texturePath);
+
         uint64_t gpuTextureHandle = makeBindless(texture->id());
+        mBindlessTextureMap.emplace(textureID, gpuTextureHandle);
         mBindlessTextures.push_back(gpuTextureHandle);
-        mBindlessTextureMap.emplace(texture, gpuTextureHandle);
 
-        // add texture
-        mTextures.push_back(texture);
-        mTexturePaths.emplace(texture, texturePath);
-        mTextureMetaData.emplace(texture, texturePath.filename().string());
-
-        // save texture index
-        texturePathToIndex.emplace(texturePath, mBindlessTextures.size() - 1);
+        insertedTextureIndexMap.emplace(i, mBindlessTextures.size() - 1);
     }
 
     // load materials
-    for (uint32_t i = 0; i < loadedModel->materials.size(); ++i)
+    std::unordered_map<uint32_t, uint32_t> insertedMaterialIndexMap; // loaded material index -> resource index
+    for (uint32_t i = 0; i < modelData->materials.size(); ++i)
     {
-        const LoadedModelData::Material& loadedMaterial = loadedModel->materials.at(i);
+        const LoadedModelData::Material& loadedMaterial = modelData->materials.at(i);
 
-        mMaterials.emplace_back();
-        Material& material = mMaterials.back();
-        material.workflow = Workflow::Metallic;
-        material.albedoColor = loadedMaterial.albedoColor;
-        material.emissionColor = loadedMaterial.emissionColor;
-        material.tiling = {1.f, 1.f};
-        material.offset = {0.f, 0.f};
+        int32_t baseColorTextureIndex = loadedMaterial.baseColorMapIndex;
+        int32_t metallicRoughnessTextureIndex = loadedMaterial.metallicRoughnessMapIndex;
+        int32_t normalTextureIndex = loadedMaterial.normalMapIndex;
+        int32_t aoTextureIndex = loadedMaterial.aoMapIndex;
+        int32_t emissionTextureIndex = loadedMaterial.emissionMapIndex;
+        int32_t specularTextureIndex = loadedMaterial.specularGlossinessMapIndex;
+        int32_t displacementTextureIndex = loadedMaterial.displacementMapIndex;
 
-        auto getMaterialIndex = [&texturePathToIndex] (const std::filesystem::path& texturePath, MaterialTextureType textureType) {
-            return texturePathToIndex.contains(texturePath)
-                   ? texturePathToIndex.at(texturePath)
-                   : static_cast<uint32_t >(textureType);
+        Material material {
+            .workflow = metallicRoughnessTextureIndex != -1 ? METALLIC_WORKFLOW : SPECULAR_WORKFLOW,
+            .baseColorFactor = loadedMaterial.baseColorFactor,
+            .emissionFactor = loadedMaterial.emissionFactor,
+            .specularGlossinessFactor = loadedMaterial.specularGlossinessFactor,
+            .metallicFactor = loadedMaterial.metallicFactor,
+            .roughnessFactor = loadedMaterial.roughnessFactor,
+            .occlusionFactor = loadedMaterial.occlusionFactor,
+            .specularFactor = loadedMaterial.specularFactor
         };
 
-        material.albedoMapIndex = getMaterialIndex(loadedMaterial.albedoTexturePath, MaterialTextureType::Albedo);
-        material.specularMapIndex = getMaterialIndex(loadedMaterial.specularTexturePath, MaterialTextureType::Specular);
-        material.roughnessMapIndex = getMaterialIndex(loadedMaterial.roughnessTexturePath, MaterialTextureType::Roughness);
-        material.metallicMapIndex = getMaterialIndex(loadedMaterial.metallicTexturePath, MaterialTextureType::Metallic);
-        material.normalMapIndex = getMaterialIndex(loadedMaterial.normalTexturePath, MaterialTextureType::Normal);
-        material.displacementMapIndex = getMaterialIndex(loadedMaterial.displacementTexturePath, MaterialTextureType::Displacement);
-        material.aoMapIndex = getMaterialIndex(loadedMaterial.aoTexturePath, MaterialTextureType::Ao);
-        material.emissionMapIndex = getMaterialIndex(loadedMaterial.emissionTexturePath, MaterialTextureType::Emission);
+        if (baseColorTextureIndex != -1)
+            material.baseColorMapIndex = insertedTextureIndexMap.at(modelData->indirectTextureMap.at(baseColorTextureIndex));
+        if (metallicRoughnessTextureIndex != -1)
+            material.metallicRoughnessMapIndex = insertedTextureIndexMap.at(modelData->indirectTextureMap.at(metallicRoughnessTextureIndex));
+        if (normalTextureIndex != -1)
+            material.normalMapIndex = insertedTextureIndexMap.at(modelData->indirectTextureMap.at(normalTextureIndex));
+        if (aoTextureIndex != -1)
+            material.aoMapIndex = insertedTextureIndexMap.at(modelData->indirectTextureMap.at(aoTextureIndex));
+        if (emissionTextureIndex != -1)
+            material.emissionMapIndex = insertedTextureIndexMap.at(modelData->indirectTextureMap.at(emissionTextureIndex));
+        if (specularTextureIndex != -1)
+            material.specularGlossinessMapIndex = insertedTextureIndexMap.at(modelData->indirectTextureMap.at(specularTextureIndex));
+        if (displacementTextureIndex != -1)
+            material.displacementMapIndex = insertedTextureIndexMap.at(modelData->indirectTextureMap.at(displacementTextureIndex));
 
-        mMaterialMetaData.emplace(&material, loadedMaterial.name);
+        mMaterials.push_back(material);
+        mMaterialMetaData.emplace(mMaterials.size() - 1, loadedMaterial.name);
 
-        model->indirectMatIndexMap.emplace(i, loadedMaterial.name);
+        model->indirectMaterialMap.emplace(i, loadedMaterial.name);
         model->mappedMaterials.emplace(loadedMaterial.name, mMaterials.size() - 1);
+
+        insertedMaterialIndexMap.emplace(i, mMaterials.size() - 1);
+    }
+
+    // load meshes
+    for (uint32_t i = 0; i < modelData->meshes.size(); ++i)
+    {
+        const LoadedModelData::Mesh& loadedMesh = modelData->meshes.at(i);
+
+        uint32_t meshID = getMeshID(loadedMesh.mesh);
+        mMeshes.emplace(meshID, loadedMesh.mesh);
+        mMeshMetaData.emplace(meshID, loadedMesh.name);
+
+        model->meshes.emplace_back(i, insertedMaterialIndexMap.at(loadedMesh.materialIndex));
+        model->indirectMeshMap.emplace(i, mMeshes.size() - 1);
     }
 
     // update SSBOs
@@ -143,137 +172,42 @@ void ResourceManager::addModel(std::shared_ptr<LoadedModelData> loadedModel)
 
 void ResourceManager::deleteModel(uint32_t modelIndex)
 {
-    std::shared_ptr<Model> model = mModels.at(modelIndex);
 
-    // remove model, model meta data, and path
-    mModels.erase(mModels.begin() + modelIndex);
-    mModelPaths.erase(model);
-    mModelMetaData.erase(model);
-
-    // remove all model meshes from mMeshes
-
-    std::unordered_set<std::shared_ptr<InstancedMesh>> meshesToRemove;
-    for (const auto& mesh : model->meshes)
-        meshesToRemove.insert(mesh.mesh);
-
-    mMeshes.erase(std::remove_if(mMeshes.begin(), mMeshes.end(),
-                                 [&meshesToRemove] (std::shared_ptr<InstancedMesh> m) {
-                                     return meshesToRemove.contains(m);
-                                 }));
-
-    // send message
-    Message message((Message::ModelDeleted(meshesToRemove)));
-    SimpleNotificationService::publishMessage(Topic::Resource, message);
 }
 
 void ResourceManager::deleteMaterial(uint32_t materialIndex)
 {
-    // remove material meta data
-    mMaterialMetaData.erase(&mMaterials.at(materialIndex));
 
-    // remove material from the array. Prevent fragmentation.
-    uint32_t lastIndex = mMaterials.size() - 1;
-    std::optional<uint32_t> movedMaterialIndex;
-
-    if (materialIndex != lastIndex)
-    {
-        std::swap(mMaterials.at(lastIndex), mMaterials.at(materialIndex));
-        movedMaterialIndex = lastIndex;
-    }
-
-    mMaterials.pop_back();
-
-    // send material deleted message
-    Message materialDeletedMessage(Message::MaterialDeleted(materialIndex, 0, movedMaterialIndex));
-    SimpleNotificationService::publishMessage(Topic::Resource, materialDeletedMessage);
-
-    // update material SSBO
-    mMaterialsSSBO.update(0, mMaterials.size() * sizeof(Material), mMaterials.data());
 }
 
 void ResourceManager::deleteTexture(uint32_t textureIndex)
 {
-    assert(textureIndex < mTextures.size());
 
-    std::shared_ptr<Texture2D> texture = mTextures.at(textureIndex);
-
-    // remove texture, the texture path, and texture metadata
-    mTextures.erase(mTextures.begin() + textureIndex);
-    mTexturePaths.erase(texture);
-    mTextureMetaData.erase(texture);
-
-    // make texture nonresident
-    uint64_t gpuTextureHandle = mBindlessTextureMap.at(texture);
-    mBindlessTextureMap.erase(texture);
-    glMakeTextureHandleNonResidentARB(gpuTextureHandle);
-
-    // remove the bindless texture from the array. Prevent fragmentation.
-    uint32_t textureCount = mBindlessTextures.size();
-    uint32_t removedTextureIndex = UINT32_MAX;
-    std::optional<uint32_t> movedTextureIndex;
-
-    for (uint32_t i = 0; i < textureCount; ++i)
-        if (gpuTextureHandle == mBindlessTextures.at(i))
-            removedTextureIndex = i;
-    assert(removedTextureIndex != UINT32_MAX);
-
-    if (removedTextureIndex != textureCount - 1)
-    {
-        uint32_t lastIndex = textureCount - 1;
-        std::swap(mBindlessTextures.at(lastIndex), mBindlessTextures.at(removedTextureIndex));
-        movedTextureIndex = lastIndex;
-        mBindlessTextures.pop_back();
-    }
-
-    mBindlessTextures.pop_back();
-
-    // update materials that might be using the deleted textures
-    checkUpdateMaterial(removedTextureIndex, movedTextureIndex);
-
-    // update gpu buffers
-    mMaterialsSSBO.update(0, mMaterials.size() * sizeof(Material), mMaterials.data());
-    mBindlessTextureSSBO.update(0, mBindlessTextures.size() * sizeof(uint64_t), mBindlessTextures.data());
-}
-
-void ResourceManager::checkUpdateMaterial(uint32_t removedTexIndex, std::optional<uint32_t> movedTexIndex)
-{
-    auto checkIndex = [removedTexIndex, movedTexIndex] (uint32_t index, MaterialTextureType type) {
-        if (index == removedTexIndex)
-        {
-            return static_cast<uint32_t>(type);
-        }
-
-        if (movedTexIndex.has_value() &&  index == movedTexIndex)
-        {
-            return removedTexIndex;
-        }
-
-        return index;
-    };
-
-    for (auto& material : mMaterials)
-    {
-        material.albedoMapIndex = checkIndex(material.albedoMapIndex, MaterialTextureType::Albedo);
-        material.specularMapIndex = checkIndex(material.specularMapIndex, MaterialTextureType::Specular);
-        material.roughnessMapIndex = checkIndex(material.roughnessMapIndex, MaterialTextureType::Roughness);
-        material.metallicMapIndex = checkIndex(material.metallicMapIndex, MaterialTextureType::Metallic);
-        material.normalMapIndex = checkIndex(material.normalMapIndex, MaterialTextureType::Normal);
-        material.displacementMapIndex = checkIndex(material.displacementMapIndex, MaterialTextureType::Displacement);
-        material.aoMapIndex = checkIndex(material.aoMapIndex, MaterialTextureType::Ao);
-        material.emissionMapIndex = checkIndex(material.emissionMapIndex, MaterialTextureType::Emission);
-    }
 }
 
 void ResourceManager::loadDefaultTextures()
 {
-    float albedo[4] {0.5f, 0.5f, 0.5f, 1.f};
-    float specular[4] {0.f, 0.f, 0.f, 0.f};
-    float roughness[4] {1.f, 1.f, 1.f, 1.f};
-    float metallic[4] {0.f, 0.f, 0.f};
-    float normal[4] {0.5f, 0.5f, 1.f, 0.f};
-    float displacement[4] {0.f, 0.f, 0.f, 0.f};
-    float ao[4] {1.f, 1.f, 1.f, 1.f};
-    float emission[4] {0.f, 0.f, 0.f, 0.f};
+    float textureData[DEFAULT_TEXTURE_COUNT][4] {
+        {1.f, 1.f, 1.f, 1.f}, // BASE COLOR WHITE
+        {0.5f, 0.5f, 0.5f, 1.f}, // BASE COLOR GREY
+        {1.f, 1.f, 1.f, 1.f}, // METALLIC ROUGHNESS
+        {0.5f, 0.5f, 1.f, 0.f}, // NORMAL
+        {1.f, 1.f, 1.f, 1.f}, // AO
+        {0.f, 0.f, 0.f, 0.f}, // EMISSION
+        {1.f, 1.f, 1.f, 1.f}, // SPECULAR
+        {0.f, 0.f, 0.f, 0.f} // DISPLACEMENT
+    };
+
+    const char* textureNames[] {
+        "Default Base Color (White)",
+        "Default Base Color (Grey)",
+        "Default Metallic Roughness",
+        "Default Normal",
+        "Default Ambient Occlusion",
+        "Default Emission",
+        "Default Specular",
+        "Default Displacement"
+    };
 
     TextureSpecification textureSpecification {
         .width = 1,
@@ -285,59 +219,16 @@ void ResourceManager::loadDefaultTextures()
         .generateMipMaps = false
     };
 
-    std::shared_ptr<Texture2D> defaultAlbedoTexture = std::make_shared<Texture2D>(textureSpecification, albedo);
-    std::shared_ptr<Texture2D> defaultSpecularTexture = std::make_shared<Texture2D>(textureSpecification, specular);
-    std::shared_ptr<Texture2D> defaultRoughnessTexture = std::make_shared<Texture2D>(textureSpecification, roughness);
-    std::shared_ptr<Texture2D> defaultMetallicTexture = std::make_shared<Texture2D>(textureSpecification, metallic);
-    std::shared_ptr<Texture2D> defaultNormalTexture = std::make_shared<Texture2D>(textureSpecification, normal);
-    std::shared_ptr<Texture2D> defaultDisplacementTexture = std::make_shared<Texture2D>(textureSpecification, displacement);
-    std::shared_ptr<Texture2D> defaultAoTexture = std::make_shared<Texture2D>(textureSpecification, ao);
-    std::shared_ptr<Texture2D> defaultEmissionTexture = std::make_shared<Texture2D>(textureSpecification, emission);
-
-    mTextures.push_back(defaultAlbedoTexture);
-    mTextures.push_back(defaultSpecularTexture);
-    mTextures.push_back(defaultRoughnessTexture);
-    mTextures.push_back(defaultMetallicTexture);
-    mTextures.push_back(defaultNormalTexture);
-    mTextures.push_back(defaultDisplacementTexture);
-    mTextures.push_back(defaultAoTexture);
-    mTextures.push_back(defaultEmissionTexture);
-
-    mTextureMetaData.emplace(defaultAlbedoTexture, "Default Albedo Texture");
-    mTextureMetaData.emplace(defaultSpecularTexture, "Default Specular Texture");
-    mTextureMetaData.emplace(defaultRoughnessTexture, "Default Roughness Texture");
-    mTextureMetaData.emplace(defaultMetallicTexture, "Default Metallic Texture");
-    mTextureMetaData.emplace(defaultNormalTexture, "Default Normal Texture");
-    mTextureMetaData.emplace(defaultDisplacementTexture, "Default Displacement Texture");
-    mTextureMetaData.emplace(defaultAoTexture, "Default Ambient Occlusion Texture");
-    mTextureMetaData.emplace(defaultEmissionTexture, "Default Emission Texture");
-
-    uint64_t albedoTextureGpuHandle = makeBindless(defaultAlbedoTexture->id());
-    uint64_t specularTextureGpuHandle = makeBindless(defaultSpecularTexture->id());
-    uint64_t roughnessTextureGpuHandle = makeBindless(defaultRoughnessTexture->id());
-    uint64_t metallicTextureGpuHandle = makeBindless(defaultMetallicTexture->id());
-    uint64_t normalTextureGpuHandle = makeBindless(defaultNormalTexture->id());
-    uint64_t displacementTextureGpuHandle = makeBindless(defaultDisplacementTexture->id());
-    uint64_t aoTextureGpuHandle = makeBindless(defaultAoTexture->id());
-    uint64_t emissionTextureGpuHandle = makeBindless(defaultEmissionTexture->id());
-
-    mBindlessTextureMap.emplace(defaultAlbedoTexture, albedoTextureGpuHandle);
-    mBindlessTextureMap.emplace(defaultSpecularTexture, specularTextureGpuHandle);
-    mBindlessTextureMap.emplace(defaultRoughnessTexture, roughnessTextureGpuHandle);
-    mBindlessTextureMap.emplace(defaultMetallicTexture, metallicTextureGpuHandle);
-    mBindlessTextureMap.emplace(defaultNormalTexture, normalTextureGpuHandle);
-    mBindlessTextureMap.emplace(defaultDisplacementTexture, displacementTextureGpuHandle);
-    mBindlessTextureMap.emplace(defaultAoTexture, aoTextureGpuHandle);
-    mBindlessTextureMap.emplace(defaultEmissionTexture, emissionTextureGpuHandle);
-
-    mBindlessTextures.push_back(albedoTextureGpuHandle);
-    mBindlessTextures.push_back(specularTextureGpuHandle);
-    mBindlessTextures.push_back(roughnessTextureGpuHandle);
-    mBindlessTextures.push_back(metallicTextureGpuHandle);
-    mBindlessTextures.push_back(normalTextureGpuHandle);
-    mBindlessTextures.push_back(displacementTextureGpuHandle);
-    mBindlessTextures.push_back(aoTextureGpuHandle);
-    mBindlessTextures.push_back(emissionTextureGpuHandle);
+    for (uint32_t i = 0; i < DEFAULT_TEXTURE_COUNT; ++i)
+    {
+        auto texture = std::make_shared<Texture2D>(textureSpecification, textureData[i]);
+        uint32_t textureId = getTextureID(texture);
+        mTextures.emplace(textureId, texture);
+        mTextureMetaData.emplace(textureId, textureNames[i]);
+        uint64_t gpuTextureHandle = makeBindless(texture->id());
+        mBindlessTextureMap.emplace(textureId, gpuTextureHandle);
+        mBindlessTextures.push_back(gpuTextureHandle);
+    }
 
     mBindlessTextureSSBO.update(0, mBindlessTextures.size() * sizeof(uint64_t), mBindlessTextures.data());
 }
@@ -345,19 +236,14 @@ void ResourceManager::loadDefaultTextures()
 void ResourceManager::loadDefaultMaterial()
 {
     Material material {
-        .workflow = Workflow::Metallic,
-        .albedoMapIndex = static_cast<uint32_t>(MaterialTextureType::Albedo),
-        .specularMapIndex = static_cast<uint32_t>(MaterialTextureType::Specular),
-        .roughnessMapIndex = static_cast<uint32_t>(MaterialTextureType::Roughness),
-        .metallicMapIndex = static_cast<uint32_t>(MaterialTextureType::Metallic),
-        .normalMapIndex = static_cast<uint32_t>(MaterialTextureType::Normal),
-        .displacementMapIndex = static_cast<uint32_t>(MaterialTextureType::Displacement),
-        .aoMapIndex = static_cast<uint32_t>(MaterialTextureType::Ao),
-        .emissionMapIndex = static_cast<uint32_t>(MaterialTextureType::Emission),
-        .albedoColor = glm::vec4(1.f),
-        .emissionColor = glm::vec4(0.f),
-        .tiling = glm::vec2(1.f),
-        .offset = glm::vec2(0.f)
+       .workflow = METALLIC_WORKFLOW,
+       .baseColorMapIndex = BASE_COLOR_GREY_TEXTURE_DEFAULT_INDEX,
+       .metallicRoughnessMapIndex = METALLIC_ROUGHNESS_TEXTURE_DEFAULT_INDEX,
+       .normalMapIndex = NORMAL_TEXTURE_DEFAULT_INDEX,
+       .aoMapIndex = AO_TEXTURE_DEFAULT_INDEX,
+       .emissionMapIndex = EMISSION_TEXTURE_DEFAULT_INDEX,
+       .specularGlossinessMapIndex = SPECULAR_TEXTURE_DEFAULT_INDEX,
+       .displacementMapIndex = DISPLACEMENT_TEXTURE_DEFAULT_INDEX
     };
 
     mMaterials.push_back(material);

@@ -12,9 +12,9 @@ MeshNode::MeshNode()
 {
 }
 
-MeshNode::MeshNode(NodeType type, const std::string &name, SceneNode *parent,
+MeshNode::MeshNode(NodeType type, const std::string& name, SceneNode* parent, const glm::mat4& transformation,
                    uint32_t materialIndex, std::shared_ptr<InstancedMesh> mesh)
-    : SceneNode(type, name, parent)
+    : SceneNode(type, name, transformation, parent)
     , mMesh(mesh)
     , mMaterialIndex(materialIndex)
     , mInstanceID(mesh->addInstance(mGlobalTransform, mID, mMaterialIndex))

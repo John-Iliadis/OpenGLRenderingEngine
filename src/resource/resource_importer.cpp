@@ -13,6 +13,7 @@
 // todo: handle embedded image data
 // todo: error handling
 // todo: handle texture sampler and wrap
+// todo: look for diffuse map if workflow is specular
 
 namespace ResourceImporter
 {
@@ -23,7 +24,7 @@ namespace ResourceImporter
             std::shared_ptr<LoadedModelData> modelData = std::make_shared<LoadedModelData>();
 
             modelData->path = path;
-            modelData->name = gltfModel->scenes.at(0).name;
+            modelData->name = path.filename().string();
             modelData->root = createModelGraph(*gltfModel, gltfModel->nodes.at(gltfModel->scenes.at(0).nodes.at(0)));
             modelData->materials = loadMaterials(*gltfModel);
             modelData->indirectTextureMap = createIndirectTextureToImageMap(*gltfModel);
@@ -68,9 +69,9 @@ namespace ResourceImporter
         std::string error;
         std::string warning;
 
-        if (fileExtension(path) == "gltf")
+        if (fileExtension(path) == ".gltf")
             loader.LoadASCIIFromFile(model.get(), &error, &warning, path.string());
-        else if (fileExtension(path) == "glb")
+        else if (fileExtension(path) == ".glb")
             loader.LoadBinaryFromFile(model.get(), &error, &warning, path.string());
 
         check(error.empty(), std::format("Failed to load model {}\nLoad error: {}", path.string(), error).c_str());
@@ -136,7 +137,7 @@ namespace ResourceImporter
 
     std::future<MeshData> createMeshData(const tinygltf::Model& model, const tinygltf::Mesh& mesh)
     {
-        debugLog(std::format("ResourceImporter::createMeshData: Loading mesh {}", mesh.name));
+        debugLog(std::format("ResourceImporter: Loading mesh {}", mesh.name));
         return std::async(std::launch::async, [&model, &mesh]() -> MeshData
         {
             return {
@@ -155,6 +156,7 @@ namespace ResourceImporter
         const tinygltf::Primitive& primitive = mesh.primitives.at(0);
 
         size_t vertexCount = model.accessors.at(primitive.attributes.at("POSITION")).count;
+        vertices.reserve(vertexCount);
 
         const float* positionBuffer = getBufferVertexData(model, primitive, "POSITION");
         const float* texCoordsBuffer = getBufferVertexData(model, primitive, "TEXCOORD_0");
@@ -216,6 +218,8 @@ namespace ResourceImporter
         if (primitive.indices == -1)
             return indices;
 
+        indices.reserve(model.accessors.at(primitive.indices).count);
+
         const tinygltf::Accessor& accessor = model.accessors.at(primitive.indices);
         const tinygltf::BufferView& bufferView = model.bufferViews.at(accessor.bufferView);
         const tinygltf::Buffer& buffer = model.buffers.at(bufferView.buffer);
@@ -235,11 +239,24 @@ namespace ResourceImporter
             const tinygltf::Material& gltfMaterial = model.materials.at(i);
 
             materials.at(i).name = gltfMaterial.name;
-            materials.at(i).baseColorMapIndex = model.textures.at(gltfMaterial.pbrMetallicRoughness.baseColorTexture.index).source;
-            materials.at(i).metallicRoughnessMapIndex = model.textures.at(gltfMaterial.pbrMetallicRoughness.metallicRoughnessTexture.index).source;
-            materials.at(i).normalMapIndex = model.textures.at(gltfMaterial.normalTexture.index).source;
-            materials.at(i).aoMapIndex = model.textures.at(gltfMaterial.occlusionTexture.index).source;
-            materials.at(i).emissionMapIndex = model.textures.at(gltfMaterial.emissiveTexture.index).source;
+
+            int32_t baseColorTextureIndex = gltfMaterial.pbrMetallicRoughness.baseColorTexture.index;
+            int32_t metallicRoughnessTextureIndex = gltfMaterial.pbrMetallicRoughness.metallicRoughnessTexture.index;
+            int32_t normalTextureIndex = gltfMaterial.normalTexture.index;
+            int32_t aoTextureIndex = gltfMaterial.normalTexture.index;
+            int32_t emissionTextureIndex = gltfMaterial.emissiveTexture.index;
+
+            if (baseColorTextureIndex != -1)
+                materials.at(i).baseColorMapIndex = model.textures.at(baseColorTextureIndex).source;
+            if (metallicRoughnessTextureIndex != -1)
+                materials.at(i).metallicRoughnessMapIndex = model.textures.at(metallicRoughnessTextureIndex).source;
+            if (normalTextureIndex != -1)
+                materials.at(i).normalMapIndex = model.textures.at(normalTextureIndex).source;
+            if (aoTextureIndex != -1)
+                materials.at(i).aoMapIndex = model.textures.at(aoTextureIndex).source;
+            if (emissionTextureIndex != -1)
+                materials.at(i).emissionMapIndex = model.textures.at(emissionTextureIndex).source;
+
             materials.at(i).baseColorFactor = glm::make_vec4(gltfMaterial.pbrMetallicRoughness.baseColorFactor.data());
             materials.at(i).emissionFactor = glm::vec4(glm::make_vec3(gltfMaterial.emissiveFactor.data()), 0.f);
             materials.at(i).metallicFactor = static_cast<float>(gltfMaterial.pbrMetallicRoughness.metallicFactor);
@@ -262,6 +279,7 @@ namespace ResourceImporter
 
     std::future<std::shared_ptr<LoadedImage>> loadImageData(const tinygltf::Image& image, const std::filesystem::path& directory)
     {
+        debugLog(std::format("ResourceImporter: Loading image {}", (directory / image.uri).string()));
         return std::async(std::launch::async, [&image, &directory] () -> std::shared_ptr<LoadedImage> {
             return std::make_shared<LoadedImage>(directory / image.uri);
         });

@@ -17,6 +17,8 @@ uint32_t filesystemHash(const std::filesystem::path& path);
 
 std::filesystem::path fileDialog();
 
+std::string fileExtension(const std::filesystem::path& path);
+
 using Task = std::function<void()>;
 
 class MainThreadTaskQueue

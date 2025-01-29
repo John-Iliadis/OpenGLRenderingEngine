@@ -11,7 +11,7 @@ class MeshNode : public SceneNode
 {
 public:
     MeshNode();
-    MeshNode(NodeType type, const std::string& name, SceneNode* parent,
+    MeshNode(NodeType type, const std::string& name, SceneNode* parent, const glm::mat4& transformation,
              uint32_t materialIndex, std::shared_ptr<InstancedMesh> mesh);
     ~MeshNode();
 

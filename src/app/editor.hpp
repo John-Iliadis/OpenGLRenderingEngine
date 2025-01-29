@@ -11,11 +11,12 @@
 #include <imgui/imgui_impl_glfw.h>
 #include <imgui/imgui_impl_opengl3.h>
 #include "../utils.hpp"
+#include "../scene_graph/scene_graph.hpp"
 
 class Renderer;
 class ResourceManager;
+class Model;
 
-// todo: must delete nodes whose mesh has been deleted
 // todo: add subscribers to topics
 class Editor
 {
@@ -28,9 +29,21 @@ public:
 
 private:
     void mainMenuBar();
+
     void assetPanel();
+    void displayModels();
+    void modelDragDropSource(std::shared_ptr<Model> model);
+    void displayMaterials();
+    void displayTextures();
+
     void sceneGraph();
+    void sceneNodeRecursive(SceneNode* node);
+    void sceneNodeDragDropSource(SceneNode* node);
+    void sceneNodeDragDropTarget(SceneNode* node);
+    void importModelToSceneGraph(std::shared_ptr<Model> model);
+
     void viewport();
+    void viewportModelDragDropTarget();
 
     void imguiInit();
     void imguiTerminate();
@@ -40,7 +53,7 @@ private:
 private:
     std::shared_ptr<Renderer> mRenderer;
     std::shared_ptr<ResourceManager> mResourceManager;
-    // SceneGraph
+    SceneGraph mSceneGraph;
 };
 
 #endif //OPENGLRENDERINGENGINE_EDITOR_HPP

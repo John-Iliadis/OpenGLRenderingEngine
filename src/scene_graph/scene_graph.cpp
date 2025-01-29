@@ -4,6 +4,11 @@
 
 #include "scene_graph.hpp"
 
+SceneGraph::SceneGraph()
+    : mRoot(NodeType::Empty, "RootNode", nullptr)
+{
+}
+
 void SceneGraph::notify(const Message &message)
 {
     if (const auto& m = message.getIf<Message::ModelDeleted>())

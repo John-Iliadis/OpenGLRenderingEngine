@@ -11,6 +11,8 @@
 class SceneGraph : public SubscriberSNS
 {
 public:
+    SceneGraph();
+
     void notify(const Message &message) override;
 
 public:

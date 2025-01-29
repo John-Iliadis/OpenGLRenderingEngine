@@ -7,22 +7,11 @@
 
 #include <glm/glm.hpp>
 
-enum class MaterialTextureType : uint32_t
-{
-    BaseColor = 0,
-    MetallicRoughness,
-    Normal,
-    Ao,
-    Emission,
-    SpecularGlossiness,
-    Displacement
-};
-
-#define METALLIC_WORKFLOW = 0
-#define SPECULAR_WORKFLOW = 1
+#define METALLIC_WORKFLOW 0
+#define SPECULAR_WORKFLOW 1
 
 // - metallic workflow uses the metallic roughness map
-// - specular workflow uses the specular glossiness/specular map
+// - specular workflow uses the specular OR glossiness/specular map
 // - for the specular workflow, the base color map will be the diffuse map
 
 struct Material

@@ -21,13 +21,13 @@ SceneNode::SceneNode()
 {
 }
 
-SceneNode::SceneNode(NodeType type, const std::string &name, SceneNode *parent)
+SceneNode::SceneNode(NodeType type, const std::string &name, const glm::mat4& transformation, SceneNode *parent)
     : mID(idGenerator())
     , mType(type)
     , mName(name)
-    , mLocalTransform(glm::identity<glm::mat4>())
-    , mGlobalTransform(glm::identity<glm::mat4>())
-    , mDirty()
+    , mLocalTransform(transformation)
+    , mGlobalTransform(transformation)
+    , mDirty(true)
     , mParent(parent)
 {
 }

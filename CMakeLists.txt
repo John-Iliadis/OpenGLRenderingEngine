@@ -87,6 +87,8 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
         STB_IMAGE_IMPLEMENTATION
         GLM_FORCE_RADIANS
         IMGUI_DEFINE_MATH_OPERATORS
+        TINYGLTF_USE_CPP14
+        TINYGLTF_NO_EXTERNAL_IMAGE
 )
 
 target_link_options(${PROJECT_NAME} PRIVATE -static)

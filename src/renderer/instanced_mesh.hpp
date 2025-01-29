@@ -9,7 +9,6 @@
 #include <glm/gtc/matrix_inverse.hpp>
 #include "../opengl/buffer.hpp"
 
-// todo: add color vertex
 class InstancedMesh
 {
 public:
