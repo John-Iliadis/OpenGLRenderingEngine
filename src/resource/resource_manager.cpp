@@ -71,10 +71,10 @@ void ResourceManager::notify(const Message &message)
     {
         for (auto& material : mMaterials)
         {
-            for (uint32_t i = 0; i < MATERIAL_TEXTURE_COUNT; ++i)
+            for (uint32_t i = 0; i < MaterialTextureCount; ++i)
             {
                 if (material.textures[i] == m->removedIndex)
-                    material.textures[i] = defaultTextureMap.at(i);
+                    material.textures[i] = gDefaultTextureMap.at(i);
 
                 if (m->transferIndex.has_value() && material.textures[i] == m->transferIndex)
                     material.textures[i] = m->removedIndex;
@@ -103,7 +103,6 @@ void ResourceManager::processMainThreadTasks()
     }
 }
 
-// todo: check if workflow is metallic or specular
 void ResourceManager::addModel(std::shared_ptr<LoadedModelData> modelData)
 {
     // create model
@@ -140,39 +139,26 @@ void ResourceManager::addModel(std::shared_ptr<LoadedModelData> modelData)
     {
         const LoadedModelData::Material& loadedMaterial = modelData->materials.at(i);
 
-        int32_t baseColorTextureIndex = loadedMaterial.baseColorMapIndex;
-        int32_t metallicRoughnessTextureIndex = loadedMaterial.metallicRoughnessMapIndex;
-        int32_t normalTextureIndex = loadedMaterial.normalMapIndex;
-        int32_t aoTextureIndex = loadedMaterial.aoMapIndex;
-        int32_t emissionTextureIndex = loadedMaterial.emissionMapIndex;
-        int32_t specularTextureIndex = loadedMaterial.specularGlossinessMapIndex;
-        int32_t displacementTextureIndex = loadedMaterial.displacementMapIndex;
+        Material material;
+        material.workflow = MetallicWorkflow;
+        material.baseColorFactor = loadedMaterial.baseColorFactor;
+        material.emissionFactor = loadedMaterial.emissionFactor;
+        material.specularGlossinessFactor = loadedMaterial.specularGlossinessFactor;
+        material.metallicFactor = loadedMaterial.metallicFactor;
+        material.roughnessFactor = loadedMaterial.roughnessFactor;
+        material.occlusionFactor = loadedMaterial.occlusionFactor;
+        material.specularFactor = loadedMaterial.specularFactor;
 
-        Material material {
-            .workflow = metallicRoughnessTextureIndex != -1 ? METALLIC_WORKFLOW : SPECULAR_WORKFLOW,
-            .baseColorFactor = loadedMaterial.baseColorFactor,
-            .emissionFactor = loadedMaterial.emissionFactor,
-            .specularGlossinessFactor = loadedMaterial.specularGlossinessFactor,
-            .metallicFactor = loadedMaterial.metallicFactor,
-            .roughnessFactor = loadedMaterial.roughnessFactor,
-            .occlusionFactor = loadedMaterial.occlusionFactor,
-            .specularFactor = loadedMaterial.specularFactor
-        };
+        for (int32_t ii = 0; ii < MaterialTextureCount; ++ii)
+        {
+            int32_t textureIndex = loadedMaterial.textures[ii];
 
-        if (baseColorTextureIndex != -1)
-            material.baseColorMapIndex = insertedTextureIndexMap.at(modelData->indirectTextureMap.at(baseColorTextureIndex));
-        if (metallicRoughnessTextureIndex != -1)
-            material.metallicRoughnessMapIndex = insertedTextureIndexMap.at(modelData->indirectTextureMap.at(metallicRoughnessTextureIndex));
-        if (normalTextureIndex != -1)
-            material.normalMapIndex = insertedTextureIndexMap.at(modelData->indirectTextureMap.at(normalTextureIndex));
-        if (aoTextureIndex != -1)
-            material.aoMapIndex = insertedTextureIndexMap.at(modelData->indirectTextureMap.at(aoTextureIndex));
-        if (emissionTextureIndex != -1)
-            material.emissionMapIndex = insertedTextureIndexMap.at(modelData->indirectTextureMap.at(emissionTextureIndex));
-        if (specularTextureIndex != -1)
-            material.specularGlossinessMapIndex = insertedTextureIndexMap.at(modelData->indirectTextureMap.at(specularTextureIndex));
-        if (displacementTextureIndex != -1)
-            material.displacementMapIndex = insertedTextureIndexMap.at(modelData->indirectTextureMap.at(displacementTextureIndex));
+            if (textureIndex != -1)
+            {
+                uint32_t indirectIndex = modelData->indirectTextureMap.at(textureIndex);
+                material.textures[ii] = insertedTextureIndexMap.at(indirectIndex);
+            }
+        }
 
         mMaterials.push_back(material);
         mMaterialMetaData.emplace(mMaterials.size() - 1, loadedMaterial.name);
@@ -281,7 +267,7 @@ void ResourceManager::deleteMaterial(uint32_t removeIndex)
 
 void ResourceManager::loadDefaultTextures()
 {
-    float textureData[DEFAULT_TEXTURE_COUNT][4] {
+    float textureData[DefaultTextureCount][4] {
         {1.f, 1.f, 1.f, 1.f}, // BASE COLOR WHITE
         {0.5f, 0.5f, 0.5f, 1.f}, // BASE COLOR GREY
         {1.f, 1.f, 1.f, 1.f}, // METALLIC ROUGHNESS
@@ -313,7 +299,7 @@ void ResourceManager::loadDefaultTextures()
         .generateMipMaps = false
     };
 
-    for (uint32_t i = 0; i < DEFAULT_TEXTURE_COUNT; ++i)
+    for (uint32_t i = 0; i < DefaultTextureCount; ++i)
     {
         auto texture = std::make_shared<Texture2D>(textureSpecification, textureData[i]);
         uint32_t textureId = getTextureID(texture);
@@ -330,7 +316,7 @@ void ResourceManager::loadDefaultTextures()
 void ResourceManager::loadDefaultMaterial()
 {
     Material material;
-    material.textures[BASE_COLOR] = BASE_COLOR_GREY_TEXTURE_DEFAULT_INDEX;
+    material.textures[BaseColor] = DefaultBaseColorGrey;
 
     mMaterials.push_back(material);
 

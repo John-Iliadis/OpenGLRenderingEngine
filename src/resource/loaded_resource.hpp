@@ -6,6 +6,7 @@
 #define OPENGLRENDERINGENGINE_LOADED_RESOURCE_HPP
 
 #include "../renderer/instanced_mesh.hpp"
+#include "../renderer/material.hpp"
 #include "../renderer/model.hpp"
 #include "../opengl/texture.hpp"
 #include "../opengl/buffer.hpp"
@@ -30,13 +31,7 @@ struct LoadedModelData
     struct Material
     {
         std::string name;
-        int32_t baseColorMapIndex = -1;
-        int32_t metallicRoughnessMapIndex = -1;
-        int32_t normalMapIndex = -1;
-        int32_t aoMapIndex = -1;
-        int32_t emissionMapIndex = -1;
-        int32_t specularGlossinessMapIndex = -1;
-        int32_t displacementMapIndex = -1;
+        int32_t textures[MaterialTextureCount];
         glm::vec4 baseColorFactor = glm::vec4(1.f);
         glm::vec4 emissionFactor = glm::vec4(0.f);
         glm::vec4 specularGlossinessFactor = glm::vec4(1.f);
@@ -44,6 +39,18 @@ struct LoadedModelData
         float roughnessFactor = 1.f;
         float occlusionFactor = 1.f;
         float specularFactor = 1.f;
+
+        Material()
+            : baseColorFactor(1.f)
+            , emissionFactor(0.f)
+            , specularGlossinessFactor(1.f)
+            , metallicFactor(1.f)
+            , roughnessFactor(1.f)
+            , occlusionFactor(1.f)
+            , specularFactor(1.f)
+        {
+            memset(textures, -1, MaterialTextureCount * sizeof(int32_t));
+        }
     };
 
     std::filesystem::path path;

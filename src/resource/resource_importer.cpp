@@ -243,19 +243,19 @@ namespace ResourceImporter
             int32_t baseColorTextureIndex = gltfMaterial.pbrMetallicRoughness.baseColorTexture.index;
             int32_t metallicRoughnessTextureIndex = gltfMaterial.pbrMetallicRoughness.metallicRoughnessTexture.index;
             int32_t normalTextureIndex = gltfMaterial.normalTexture.index;
-            int32_t aoTextureIndex = gltfMaterial.normalTexture.index;
+            int32_t aoTextureIndex = gltfMaterial.occlusionTexture.index;
             int32_t emissionTextureIndex = gltfMaterial.emissiveTexture.index;
 
             if (baseColorTextureIndex != -1)
-                materials.at(i).baseColorMapIndex = model.textures.at(baseColorTextureIndex).source;
+                materials.at(i).textures[BaseColor] = model.textures.at(baseColorTextureIndex).source;
             if (metallicRoughnessTextureIndex != -1)
-                materials.at(i).metallicRoughnessMapIndex = model.textures.at(metallicRoughnessTextureIndex).source;
+                materials.at(i).textures[MetallicRoughness] = model.textures.at(metallicRoughnessTextureIndex).source;
             if (normalTextureIndex != -1)
-                materials.at(i).normalMapIndex = model.textures.at(normalTextureIndex).source;
+                materials.at(i).textures[Normal] = model.textures.at(normalTextureIndex).source;
             if (aoTextureIndex != -1)
-                materials.at(i).aoMapIndex = model.textures.at(aoTextureIndex).source;
+                materials.at(i).textures[Ao] = model.textures.at(aoTextureIndex).source;
             if (emissionTextureIndex != -1)
-                materials.at(i).emissionMapIndex = model.textures.at(emissionTextureIndex).source;
+                materials.at(i).textures[Emission] = model.textures.at(emissionTextureIndex).source;
 
             materials.at(i).baseColorFactor = glm::make_vec4(gltfMaterial.pbrMetallicRoughness.baseColorFactor.data());
             materials.at(i).emissionFactor = glm::vec4(glm::make_vec3(gltfMaterial.emissiveFactor.data()), 0.f);

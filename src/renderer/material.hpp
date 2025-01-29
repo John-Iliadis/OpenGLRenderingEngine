@@ -7,34 +7,51 @@
 
 #include <glm/glm.hpp>
 
-#define DEFAULT_MATERIAL_INDEX 0
-#define BASE_COLOR_WHITE_TEXTURE_DEFAULT_INDEX 0
-#define BASE_COLOR_GREY_TEXTURE_DEFAULT_INDEX 1
-#define METALLIC_ROUGHNESS_TEXTURE_DEFAULT_INDEX 2
-#define NORMAL_TEXTURE_DEFAULT_INDEX 3
-#define AO_TEXTURE_DEFAULT_INDEX 4
-#define EMISSION_TEXTURE_DEFAULT_INDEX 5
-#define SPECULAR_TEXTURE_DEFAULT_INDEX 6
-#define DISPLACEMENT_TEXTURE_DEFAULT_INDEX 7
-#define DEFAULT_TEXTURE_COUNT 8
+enum DefaultTextureIndices
+{
+    DefaultBaseColorWhite = 0,
+    DefaultBaseColorGrey,
+    DefaultMetallicRoughness,
+    DefaultNormal,
+    DefaultAo,
+    DefaultEmission,
+    DefaultSpecular,
+    DefaultDisplacement,
+    DefaultTextureCount
+};
 
-// material map indices
-#define BASE_COLOR 0
-#define METALLIC_ROUGHNESS 1
-#define NORMAL 2
-#define AO 3
-#define EMISSION 4
-#define SPECULAR 5
-#define DISPLACEMENT 6
-#define MATERIAL_TEXTURE_COUNT 7
+enum MaterialTextureIndices
+{
+    BaseColor = 0,
+    MetallicRoughness,
+    Normal,
+    Ao,
+    Emission,
+    Specular,
+    Displacement,
+    MaterialTextureCount
+};
 
-#define METALLIC_WORKFLOW 0u
-#define SPECULAR_WORKFLOW 1u
+inline const std::unordered_map<int32_t, int32_t> gDefaultTextureMap {
+    {BaseColor, DefaultBaseColorWhite},
+    {MetallicRoughness, DefaultMetallicRoughness},
+    {Normal, DefaultNormal},
+    {Ao, DefaultAo},
+    {Emission, DefaultEmission},
+    {Specular, DefaultSpecular},
+    {Displacement, DefaultDisplacement}
+};
+
+enum Workflow
+{
+    MetallicWorkflow = 0,
+    SpecularWorkflow = 1
+};
 
 struct Material
 {
-    uint32_t workflow;
-    uint32_t textures[MATERIAL_TEXTURE_COUNT];
+    int32_t workflow;
+    int32_t textures[MaterialTextureCount];
     glm::vec4 baseColorFactor;
     glm::vec4 emissionFactor;
     glm::vec4 specularGlossinessFactor;
@@ -46,7 +63,7 @@ struct Material
     glm::vec2 offset;
 
     Material()
-        : workflow(METALLIC_WORKFLOW)
+        : workflow(MetallicWorkflow)
         , textures()
         , baseColorFactor(1.f)
         , emissionFactor(0.f)
@@ -58,24 +75,9 @@ struct Material
         , tiling(1.f)
         , offset(0.f)
     {
-        textures[BASE_COLOR] = BASE_COLOR_WHITE_TEXTURE_DEFAULT_INDEX;
-        textures[METALLIC_ROUGHNESS] = METALLIC_ROUGHNESS_TEXTURE_DEFAULT_INDEX;
-        textures[NORMAL] = NORMAL_TEXTURE_DEFAULT_INDEX;
-        textures[AO] = AO_TEXTURE_DEFAULT_INDEX;
-        textures[EMISSION] = EMISSION_TEXTURE_DEFAULT_INDEX;
-        textures[SPECULAR] = SPECULAR_TEXTURE_DEFAULT_INDEX;
-        textures[DISPLACEMENT] = DISPLACEMENT_TEXTURE_DEFAULT_INDEX;
+        for (int32_t i = 0; i < MaterialTextureCount; ++i)
+            textures[i] = gDefaultTextureMap.at(i);
     }
-};
-
-inline const std::unordered_map<uint32_t, uint32_t> defaultTextureMap {
-    {BASE_COLOR, BASE_COLOR_WHITE_TEXTURE_DEFAULT_INDEX},
-    {METALLIC_ROUGHNESS, METALLIC_ROUGHNESS_TEXTURE_DEFAULT_INDEX},
-    {NORMAL, NORMAL_TEXTURE_DEFAULT_INDEX},
-    {AO, AO_TEXTURE_DEFAULT_INDEX},
-    {EMISSION, EMISSION_TEXTURE_DEFAULT_INDEX},
-    {SPECULAR, SPECULAR_TEXTURE_DEFAULT_INDEX},
-    {DISPLACEMENT, DISPLACEMENT_TEXTURE_DEFAULT_INDEX}
 };
 
 #endif //OPENGLRENDERINGENGINE_MATERIAL_HPP
