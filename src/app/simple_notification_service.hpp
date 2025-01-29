@@ -13,7 +13,7 @@ public:
     struct ModelDeleted
     {
         uint32_t modelID;
-        std::vector<uint32_t> meshIDs;
+        std::unordered_set<uint32_t> meshIDs;
     };
 
     struct MaterialDeleted
@@ -37,16 +37,23 @@ public:
         glm::mat4 transformation;
     };
 
+    struct RemoveMeshInstance
+    {
+        uint32_t meshID;
+        uint32_t instanceID;
+    };
+
     struct MaterialRemap
     {
         uint32_t meshID;
-        uint32_t materialIndex;
+        uint32_t newMaterialIndex;
     };
 
     std::variant<ModelDeleted,
         MaterialDeleted,
         TextureDeleted,
         MeshInstanceUpdate,
+        RemoveMeshInstance,
         MaterialRemap> message;
 
     template<typename T>
@@ -71,21 +78,16 @@ public:
     }
 };
 
-class SubscriberSNS
-{
-public:
-    SubscriberSNS() = default;
-    virtual ~SubscriberSNS() = default;
-    virtual void notify(const Message& message) {};
-};
-
+class SubscriberSNS;
 class Topic
 {
 public:
     enum Type
     {
         None = 0,
-        Resource,
+        Editor,
+        SceneGraph,
+        ResourceManager,
         Count
     };
 
@@ -100,7 +102,24 @@ private:
     std::unordered_set<SubscriberSNS*> mSubscribers;
 };
 
-class SimpleNotificationService
+class SubscriberSNS
+{
+public:
+    SubscriberSNS() = default;
+    SubscriberSNS(std::initializer_list<Topic::Type> topics);
+
+    virtual ~SubscriberSNS();
+    virtual void notify(const Message& message) {};
+
+    void subscribe(Topic::Type topicType);
+    void unsubscribe(Topic::Type topicType);
+
+private:
+    std::unordered_set<Topic::Type> mSubscriptionList;
+};
+
+// SimpleNotificationService
+class SNS
 {
 public:
     static void subscribe(Topic::Type topicType, SubscriberSNS* subscriber);

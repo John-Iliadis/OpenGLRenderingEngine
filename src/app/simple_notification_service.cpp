@@ -20,17 +20,46 @@ void Topic::publish(const Message &message)
         subscriber->notify(message);
 }
 
-void SimpleNotificationService::subscribe(Topic::Type topicType, SubscriberSNS *subscriber)
+SubscriberSNS::SubscriberSNS(std::initializer_list<Topic::Type> topics)
+    : mSubscriptionList(topics)
+{
+}
+
+SubscriberSNS::~SubscriberSNS()
+{
+    for (auto topic : mSubscriptionList)
+        SNS::unsubscribe(topic, this);
+}
+
+void SubscriberSNS::subscribe(Topic::Type topicType)
+{
+    if (!mSubscriptionList.contains(topicType))
+    {
+        mSubscriptionList.insert(topicType);
+        SNS::subscribe(topicType, this);
+    }
+}
+
+void SubscriberSNS::unsubscribe(Topic::Type topicType)
+{
+    if (mSubscriptionList.contains(topicType))
+    {
+        mSubscriptionList.erase(topicType);
+        SNS::unsubscribe(topicType, this);
+    }
+}
+
+void SNS::subscribe(Topic::Type topicType, SubscriberSNS *subscriber)
 {
     mTopics.at(topicType).addSubscriber(subscriber);
 }
 
-void SimpleNotificationService::unsubscribe(Topic::Type topicType, SubscriberSNS *subscriber)
+void SNS::unsubscribe(Topic::Type topicType, SubscriberSNS *subscriber)
 {
     mTopics.at(topicType).removeSubscriber(subscriber);
 }
 
-void SimpleNotificationService::publishMessage(Topic::Type topicType, const Message& message)
+void SNS::publishMessage(Topic::Type topicType, const Message& message)
 {
     mTopics.at(topicType).publish(message);
 }
