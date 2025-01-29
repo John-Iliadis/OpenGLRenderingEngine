@@ -17,7 +17,6 @@ class Renderer;
 class ResourceManager;
 class Model;
 
-// todo: add subscribers to topics
 class Editor
 {
 public:
@@ -32,7 +31,6 @@ private:
 
     void assetPanel();
     void displayModels();
-    void modelDragDropSource(std::shared_ptr<Model> model);
     void displayMaterials();
     void displayTextures();
 
@@ -40,10 +38,8 @@ private:
     void sceneNodeRecursive(SceneNode* node);
     void sceneNodeDragDropSource(SceneNode* node);
     void sceneNodeDragDropTarget(SceneNode* node);
-    void importModelToSceneGraph(std::shared_ptr<Model> model);
 
     void viewport();
-    void viewportModelDragDropTarget();
 
     void imguiInit();
     void imguiTerminate();

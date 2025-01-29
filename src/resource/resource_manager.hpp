@@ -23,7 +23,7 @@ uint32_t getModelID(const std::shared_ptr<Model> model);
 uint32_t getMeshID(const std::shared_ptr<InstancedMesh> mesh);
 uint32_t getTextureID(const std::shared_ptr<Texture2D> texture);
 
-class ResourceManager
+class ResourceManager : public SubscriberSNS
 {
 public:
     ResourceManager();
@@ -31,14 +31,16 @@ public:
 
     bool importModel(const std::filesystem::path& path);
 
+    void notify(const Message &message) override;
+
     void processMainThreadTasks();
 
 private:
     void addModel(std::shared_ptr<LoadedModelData> modelData);
 
-    void deleteModel(uint32_t modelIndex);
-    void deleteMaterial(uint32_t materialIndex);
-    void deleteTexture(uint32_t textureIndex);
+    void deleteModel(uint32_t modelID);
+    void deleteTexture(uint32_t textureID);
+    void deleteMaterial(uint32_t removeIndex);
 
     void loadDefaultTextures();
     void loadDefaultMaterial();
@@ -57,7 +59,7 @@ private:
     std::unordered_map<uint32_t, std::shared_ptr<Texture2D>> mTextures;
     std::unordered_map<uint32_t, TextureMetaData> mTextureMetaData;
     std::unordered_map<uint32_t, std::filesystem::path> mTexturePaths;
-    std::unordered_map<uint32_t, uint64_t> mBindlessTextureMap;
+    std::unordered_map<uint32_t, uint32_t> mBindlessTextureMap;
     std::vector<uint64_t> mBindlessTextures;
     ShaderBuffer mBindlessTextureSSBO;
 

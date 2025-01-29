@@ -6,39 +6,45 @@
 
 MeshNode::MeshNode()
     : SceneNode()
-    , mMesh()
+    , mMeshID()
     , mMaterialIndex()
     , mInstanceID()
+    , mModifiedMaterial()
 {
+    subscribe(Topic::Type::ResourceManager);
 }
 
-MeshNode::MeshNode(NodeType type, const std::string& name, SceneNode* parent, const glm::mat4& transformation,
-                   uint32_t materialIndex, std::shared_ptr<InstancedMesh> mesh)
+MeshNode::MeshNode(NodeType type, const std::string& name, const glm::mat4& transformation, SceneNode* parent,
+                   uint32_t meshID, uint32_t instanceID, uint32_t materialIndex)
     : SceneNode(type, name, transformation, parent)
-    , mMesh(mesh)
+    , mMeshID(meshID)
+    , mInstanceID(instanceID)
     , mMaterialIndex(materialIndex)
-    , mInstanceID(mesh->addInstance(mGlobalTransform, mID, mMaterialIndex))
+    , mModifiedMaterial()
 {
+    subscribe(Topic::Type::ResourceManager);
 }
 
 MeshNode::~MeshNode()
 {
-    mMesh->removeInstance(mInstanceID);
+    SNS::publishMessage(Topic::Type::SceneGraph, Message::create<Message::RemoveMeshInstance>(mMeshID, mInstanceID));
 }
 
 void MeshNode::notify(const Message &message)
 {
     if (const auto m = message.getIf<Message::MaterialDeleted>())
     {
-        auto updateMaterialIndex = [this](uint32_t newMaterialIndex) {
-            mMaterialIndex = newMaterialIndex;
-            mMesh->updateInstance(mInstanceID, mGlobalTransform, mID, mMaterialIndex);
-        };
+        if (m->removeIndex == mMaterialIndex)
+            mMaterialIndex = 0;
 
-        if (mMaterialIndex == m->deletedIndex)
-            updateMaterialIndex(m->defaultMaterialIndex);
-        else if (m->movedMaterialIndex.has_value() && mMaterialIndex == m->movedMaterialIndex)
-            updateMaterialIndex(m->deletedIndex);
+        if (m->transferIndex.has_value() && m->transferIndex == mMaterialIndex)
+            mMaterialIndex = m->removeIndex;
+    }
+
+    if (const auto m = message.getIf<Message::MaterialRemap>())
+    {
+        if (!mModifiedMaterial && mMeshID == m->meshID)
+            mMaterialIndex = m->newMaterialIndex;
     }
 }
 
@@ -56,14 +62,20 @@ void MeshNode::updateGlobalTransform()
         }
 
         mDirty = false;
-        mMesh->updateInstance(mInstanceID, mGlobalTransform, mID, mMaterialIndex);
+
+        SNS::publishMessage(Topic::Type::SceneGraph, Message::create<Message::MeshInstanceUpdate>(mMeshID, mID, mInstanceID, mMaterialIndex, mGlobalTransform));
     }
 
     for (auto child : mChildren)
         child->updateGlobalTransform();
 }
 
-std::shared_ptr<InstancedMesh> MeshNode::mesh() const
+uint32_t MeshNode::meshID() const
 {
-    return mMesh;
+    return mMeshID;
+}
+
+uint32_t MeshNode::instanceID() const
+{
+    return mInstanceID;
 }

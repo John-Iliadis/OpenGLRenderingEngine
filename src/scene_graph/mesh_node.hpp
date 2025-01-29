@@ -11,19 +11,21 @@ class MeshNode : public SceneNode
 {
 public:
     MeshNode();
-    MeshNode(NodeType type, const std::string& name, SceneNode* parent, const glm::mat4& transformation,
-             uint32_t materialIndex, std::shared_ptr<InstancedMesh> mesh);
+    MeshNode(NodeType type, const std::string& name, const glm::mat4& transformation, SceneNode* parent,
+             uint32_t meshID, uint32_t instanceID, uint32_t materialIndex);
     ~MeshNode();
 
     void notify(const Message &message) override;
     void updateGlobalTransform() override;
 
-    std::shared_ptr<InstancedMesh> mesh() const;
+    uint32_t meshID() const;
+    uint32_t instanceID() const;
 
 private:
-    std::shared_ptr<InstancedMesh> mMesh;
-    uint32_t mMaterialIndex;
+    uint32_t mMeshID;
     uint32_t mInstanceID;
+    uint32_t mMaterialIndex;
+    bool mModifiedMaterial;
 };
 
 #endif //OPENGLRENDERINGENGINE_MESH_NODE_HPP

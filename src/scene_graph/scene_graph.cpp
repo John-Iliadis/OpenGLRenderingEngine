@@ -5,7 +5,7 @@
 #include "scene_graph.hpp"
 
 SceneGraph::SceneGraph()
-    : mRoot(NodeType::Empty, "RootNode", nullptr)
+    : mRoot(NodeType::Empty, "RootNode", glm::identity<glm::mat4>(), nullptr)
 {
 }
 
@@ -24,7 +24,7 @@ void SceneGraph::notify(const Message &message)
             {
                 MeshNode* meshNode = dynamic_cast<MeshNode*>(node);
 
-                if (m->removedMeshes.contains(meshNode->mesh()))
+                if (m->meshIDs.contains(meshNode->meshID()))
                 {
                     meshNode->orphan();
                     delete meshNode;

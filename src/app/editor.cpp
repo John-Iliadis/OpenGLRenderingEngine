@@ -9,7 +9,6 @@ Editor::Editor(std::shared_ptr<Renderer> renderer, std::shared_ptr<ResourceManag
     : mRenderer(renderer)
     , mResourceManager(resourceManager)
 {
-    SimpleNotificationService::subscribe(Topic::Resource, &mSceneGraph);
     imguiInit();
 }
 
@@ -39,7 +38,7 @@ void Editor::mainMenuBar()
     {
         if (ImGui::BeginMenu("File"))
         {
-            if (ImGui::MenuItem("ImportModel"))
+            if (ImGui::MenuItem("Import Model"))
             {
                 std::filesystem::path path = fileDialog();
 
@@ -88,7 +87,7 @@ void Editor::assetPanel()
             if (ImGui::Button(items.at(i), selectableSize))
                 selectedIndex = i;
 
-            ImGui::PopStyleColor(2);
+            ImGui::PopStyleColor();
 
             if (i < items.size() - 1)
                 ImGui::SameLine();
@@ -112,7 +111,7 @@ void Editor::assetPanel()
 
 void Editor::displayModels()
 {
-    for (auto& [model, modelMetadata] : mResourceManager->mModelMetaData)
+    for (auto& [modelID, modelMetadata] : mResourceManager->mModelMetaData)
     {
          if (ImGui::Button(modelMetadata.c_str()))
          {
@@ -121,19 +120,9 @@ void Editor::displayModels()
     }
 }
 
-void Editor::modelDragDropSource(std::shared_ptr<Model> model)
-{
-    if (ImGui::BeginDragDropSource())
-    {
-        std::weak_ptr<Model> weakPtr(model);
-        ImGui::SetDragDropPayload("Model", &model, sizeof(std::weak_ptr<Model>));
-        ImGui::EndDragDropSource();
-    }
-}
-
 void Editor::displayMaterials()
 {
-    for (auto& [material, materialMetadata] : mResourceManager->mMaterialMetaData)
+    for (auto& [materialID, materialMetadata] : mResourceManager->mMaterialMetaData)
     {
         ImGui::Button(materialMetadata.c_str());
     }
@@ -141,7 +130,7 @@ void Editor::displayMaterials()
 
 void Editor::displayTextures()
 {
-    for (auto& [texture, textureMetadata] : mResourceManager->mTextureMetaData)
+    for (auto& [textureID, textureMetadata] : mResourceManager->mTextureMetaData)
     {
         ImGui::Button(textureMetadata.c_str());
     }
@@ -205,37 +194,6 @@ void Editor::sceneNodeDragDropTarget(SceneNode *node)
     }
 }
 
-static void buildNodeHierarchy(std::shared_ptr<Model> model, const Model::Node& modelNode, SceneNode* parent)
-{
-    if (modelNode.meshes.empty())
-    {
-        parent->addChild(new SceneNode(NodeType::Empty, modelNode.name, modelNode.transformation, parent));
-    }
-    else
-    {
-        for (uint32_t i = 0; i < modelNode.meshes.size(); ++i)
-        {
-            uint32_t materialIndex = model->getMaterialIndex(i);
-            std::shared_ptr<InstancedMesh> mesh = model->meshes.at(i).mesh;
-            parent->addChild(new MeshNode(NodeType::Mesh, modelNode.name, parent, modelNode.transformation, materialIndex, mesh));
-
-
-        }
-    }
-
-
-}
-
-void Editor::importModelToSceneGraph(std::shared_ptr<Model> model)
-{
-    const Model::Node& modelNode = model->root;
-
-    SceneNode* rootNode = new SceneNode(NodeType::Empty, modelNode.name, modelNode.transformation, &mSceneGraph.mRoot);
-
-    for (const auto& child : modelNode.children)
-        buildNodeHierarchy(child, rootNode);
-}
-
 void Editor::viewport()
 {
     ImGui::Begin("Viewport");
@@ -273,20 +231,4 @@ void Editor::imguiEnd()
 {
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-}
-
-void Editor::viewportModelDragDropTarget()
-{
-    if (ImGui::BeginDragDropTarget())
-    {
-        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Model"))
-        {
-            std::weak_ptr<Model> model = *(std::weak_ptr<Model>*)payload->Data;
-
-            if (auto m = model.lock())
-                importModelToSceneGraph(m);
-        }
-
-        ImGui::EndDragDropTarget();
-    }
 }

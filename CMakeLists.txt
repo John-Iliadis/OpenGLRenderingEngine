@@ -62,9 +62,12 @@ add_executable(${PROJECT_NAME}
         src/scene_graph/light_node.hpp
         src/scene_graph/scene_graph.cpp
         src/scene_graph/scene_graph.hpp
+        dependencies/stb/src/stb_image.cpp
 )
 
 add_subdirectory(${DEPENDENCY_DIR}/glad/)
+add_subdirectory(${DEPENDENCY_DIR}/tiny_gltf/)
+add_subdirectory(${DEPENDENCY_DIR}/stb/)
 
 target_precompile_headers(${PROJECT_NAME} PRIVATE src/pch.hpp)
 
@@ -77,6 +80,8 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} PRIVATE
         OpenGL::GL
         glad
+        stb
+        tiny_gltf
         ${LIBS}
 )
 
@@ -84,11 +89,8 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
         $<$<CONFIG:Debug>:DEBUG_MODE>
         GLFW_INCLUDE_NONE
         GLFW_EXPOSE_NATIVE_WIN32
-        STB_IMAGE_IMPLEMENTATION
         GLM_FORCE_RADIANS
         IMGUI_DEFINE_MATH_OPERATORS
-        TINYGLTF_USE_CPP14
-        TINYGLTF_NO_EXTERNAL_IMAGE
 )
 
 target_link_options(${PROJECT_NAME} PRIVATE -static)
