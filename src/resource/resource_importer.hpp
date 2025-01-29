@@ -5,9 +5,9 @@
 #ifndef OPENGLRENDERINGENGINE_RESOURCE_IMPORTER_HPP
 #define OPENGLRENDERINGENGINE_RESOURCE_IMPORTER_HPP
 
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
+#include <tiny_gltf/tiny_gltf.h>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include "../utils.hpp"
 #include "loaded_resource.hpp"
 
@@ -15,32 +15,31 @@ using EnqueueCallback = std::function<void(std::function<void()>&&)>;
 
 namespace ResourceImporter
 {
-    // todo: fix scene graph
-    // todo: fix fbx texture paths
-    // todo: fix gltf texture paths
     std::future<std::shared_ptr<LoadedModelData>> loadModel(const std::filesystem::path& path, EnqueueCallback callback);
+
+    std::shared_ptr<tinygltf::Model> loadGltfScene(const std::filesystem::path& path);
+
+    Model::Node createModelGraph(const tinygltf::Model& model, const tinygltf::Node& node);
+
+    glm::mat4 getNodeTransformation(const tinygltf::Node& node);
 
     LoadedModelData::Mesh createMesh(const MeshData& meshData);
 
-    std::pair<std::filesystem::path, std::shared_ptr<Texture2D>> createTexturePair(const LoadedImage& loadedImage);
+    std::future<MeshData> createMeshData(const tinygltf::Model& model, const tinygltf::Mesh& mesh);
 
-    std::shared_ptr<aiScene> loadAssimpScene(const std::filesystem::path& path);
+    std::vector<InstancedMesh::Vertex> loadMeshVertices(const tinygltf::Model& model, const tinygltf::Mesh& mesh);
 
-    Model::Node createModelGraph(const aiNode& assimpNode);
+    const float* getBufferVertexData(const tinygltf::Model& model, const tinygltf::Primitive& primitive, const std::string& attribute);
 
-    std::future<MeshData> createMeshData(const aiMesh& assimpMesh);
+    std::vector<uint32_t> loadMeshIndices(const tinygltf::Model& model, const tinygltf::Mesh& mesh);
 
-    std::future<std::shared_ptr<LoadedImage>> createTextureData(const std::filesystem::path& path);
+    std::vector<LoadedModelData::Material> loadMaterials(const tinygltf::Model& model);
 
-    LoadedModelData::Material createMaterial(const aiMaterial& assimpMaterial, const std::filesystem::path& directory);
+    std::unordered_map<int32_t, int32_t> createIndirectTextureToImageMap(const tinygltf::Model& model);
 
-    std::vector<InstancedMesh::Vertex> loadMeshVertices(const aiMesh& mesh);
+    std::future<std::shared_ptr<LoadedImage>> loadImageData(const tinygltf::Image& image, const std::filesystem::path& directory);
 
-    std::vector<uint32_t> loadMeshIndices(const aiMesh& mesh);
-
-    glm::mat4 assimpToGlmMat4(const aiMatrix4x4& matrix);
-
-    std::string getTextureName(const aiMaterial& material, aiTextureType textureType);
+    std::pair<std::shared_ptr<Texture2D>, std::filesystem::path> makeTexturePathPair(const std::shared_ptr<LoadedImage>& imageData);
 }
 
 #endif //OPENGLRENDERINGENGINE_RESOURCE_IMPORTER_HPP
