@@ -7,6 +7,8 @@
 
 #include <glad/glad.h>
 #include <glm/glm.hpp>
+#include <stb/stb_image.h>
+#include "../utils.hpp"
 
 enum class TextureFormat
 {

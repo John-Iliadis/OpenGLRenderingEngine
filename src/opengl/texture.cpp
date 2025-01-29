@@ -3,8 +3,6 @@
 //
 
 #include "texture.hpp"
-#include <stb/stb_image.h>
-#include "../utils.hpp"
 
 GLenum toGLenumFormat(TextureFormat format)
 {
