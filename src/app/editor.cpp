@@ -39,6 +39,8 @@ void Editor::update(float dt)
 
     if (mShowViewport) // update last
         viewportPreRender();
+
+    mCamera.update(dt); // updates inside the viewport panel
 }
 
 void Editor::render()
@@ -245,6 +247,52 @@ void Editor::viewportPostRender()
 void Editor::cameraPanel()
 {
     ImGui::Begin("Camera", &mShowCameraPanel);
+
+    ImGui::SliderFloat("Field of View", mCamera.fov(), 1.f, 177.f, "%0.f");
+    ImGui::DragFloat("Near Plane", mCamera.nearPlane(), 0.1f, 0.1f, *mCamera.farPlane(), "%.1f");
+    ImGui::DragFloat("Far Plane", mCamera.farPlane(), 0.1f, *mCamera.nearPlane(), FLT_MAX, "%.1f");
+    ImGui::DragFloat("Fly Speed", mCamera.flySpeed(), 1.f, 0.f, FLT_MAX, "%.0f");
+    ImGui::DragFloat("Pan Speed", mCamera.panSpeed(), 1.f, 0.f, FLT_MAX, "%.0f");
+    ImGui::DragFloat("Z Scroll Offset", mCamera.zScrollOffset(), 1.f, 0.f, FLT_MAX, "%.0f");
+    ImGui::DragFloat("Rotate Sensitivity", mCamera.rotateSensitivity(), 1.f, 0.f, FLT_MAX, "%.0f");
+    ImGui::SeparatorText("Camera Mode");
+
+    static int selectedIndex = 0;
+    static const std::array<const char*, 3> items {{
+        "First Person",
+        "View",
+        "Edit"
+    }};
+
+    {
+        ImGui::BeginGroup();
+
+        for (int i = 0; i < items.size(); ++i)
+        {
+            const ImGuiStyle& style = ImGui::GetStyle();
+            ImVec2 selectableSize = ImGui::CalcTextSize(items.at(i)) + style.FramePadding * 2.f;
+
+            ImGui::PushStyleColor(ImGuiCol_Button, style.Colors[selectedIndex == i? ImGuiCol_ButtonHovered : ImGuiCol_Button]);
+
+            if (ImGui::Button(items.at(i), selectableSize))
+                selectedIndex = i;
+
+            ImGui::PopStyleColor();
+
+            if (i < items.size() - 1)
+                ImGui::SameLine();
+        }
+
+        ImGui::EndGroup();
+    }
+
+    if (selectedIndex == 0)
+        mCamera.setState(Camera::FIRST_PERSON);
+    if (selectedIndex == 1)
+        mCamera.setState(Camera::VIEW_MODE);
+    if (selectedIndex == 2)
+        mCamera.setState(Camera::EDITOR_MODE);
+
     ImGui::End();
 }
 
