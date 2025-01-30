@@ -9,6 +9,11 @@ SceneGraph::SceneGraph()
 {
 }
 
+void SceneGraph::updateTransforms()
+{
+    mRoot.updateGlobalTransform();
+}
+
 void SceneGraph::notify(const Message &message)
 {
     if (const auto& m = message.getIf<Message::ModelDeleted>())

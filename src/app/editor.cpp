@@ -115,8 +115,9 @@ void Editor::displayModels()
     {
          if (ImGui::Button(modelMetadata.c_str()))
          {
-
          }
+
+         modelDragDropSource(modelID);
     }
 }
 
@@ -147,6 +148,8 @@ void Editor::sceneGraph()
     sceneNodeDragDropTarget(&mSceneGraph.mRoot);
 
     ImGui::End();
+
+    mSceneGraph.updateTransforms();
 }
 
 void Editor::sceneNodeRecursive(SceneNode *node)
@@ -157,11 +160,13 @@ void Editor::sceneNodeRecursive(SceneNode *node)
         ImGuiTreeNodeFlags_SpanAvailWidth
     };
 
-    if (ImGui::TreeNodeEx((void*)(intptr_t)node, treeNodeFlags, node->name().c_str()))
-    {
-        sceneNodeDragDropSource(node);
-        sceneNodeDragDropTarget(node);
+    bool nodeOpen = ImGui::TreeNodeEx((void*)(intptr_t)node, treeNodeFlags, node->name().c_str());
 
+    sceneNodeDragDropSource(node);
+    sceneNodeDragDropTarget(node);
+
+    if (nodeOpen)
+    {
         for (auto child : node->children())
             sceneNodeRecursive(child);
 
@@ -187,6 +192,8 @@ void Editor::sceneNodeDragDropTarget(SceneNode *node)
             SceneNode* transferNode = *(SceneNode**)payload->Data;
 
             transferNode->orphan();
+            transferNode->markDirty();
+
             node->addChild(transferNode);
         }
 
@@ -197,6 +204,8 @@ void Editor::sceneNodeDragDropTarget(SceneNode *node)
 void Editor::viewport()
 {
     ImGui::Begin("Viewport");
+    ImGui::Dummy(ImGui::GetContentRegionAvail());
+    modelDragDropTarget();
     ImGui::End();
 }
 
@@ -231,4 +240,59 @@ void Editor::imguiEnd()
 {
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+}
+
+void Editor::modelDragDropSource(uint32_t modelID)
+{
+    if (ImGui::BeginDragDropSource())
+    {
+        ImGui::SetDragDropPayload("Model", &modelID, sizeof(uint32_t));
+        ImGui::EndDragDropSource();
+    }
+}
+
+// todo: fix this bullshit
+void Editor::modelDragDropTarget()
+{
+    if (ImGui::BeginDragDropTarget())
+    {
+        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Model"))
+        {
+            uint32_t modelID = *(uint32_t*)payload->Data;
+            std::shared_ptr<Model> model = mResourceManager->mModels.at(modelID);
+            mSceneGraph.mRoot.addChild(addSceneNode(model, model->root, &mSceneGraph.mRoot));
+        }
+
+        ImGui::EndDragDropTarget();
+    }
+}
+
+// todo: and this
+SceneNode *Editor::addSceneNode(std::shared_ptr<Model> model, const Model::Node &modelNode, SceneNode* parent)
+{
+    SceneNode* sceneNode;
+
+    if (modelNode.mesh.has_value())
+    {
+        uint32_t meshID = model->getMeshID(modelNode);
+        uint32_t instanceID = mResourceManager->mMeshes.at(meshID)->addInstance({}, {}, {});
+        uint32_t materialIndex = model->getMaterialIndex(modelNode);
+
+        sceneNode = new MeshNode(NodeType::Mesh,
+                                 modelNode.name,
+                                 modelNode.transformation,
+                                 parent,
+                                 meshID,
+                                 instanceID,
+                                 materialIndex);
+    }
+    else
+    {
+        sceneNode = new SceneNode(NodeType::Empty, modelNode.name, modelNode.transformation, parent);
+    }
+
+    for (const auto& child : modelNode.children)
+        sceneNode->addChild(addSceneNode(model, child, sceneNode));
+
+    return sceneNode;
 }

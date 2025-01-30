@@ -6,7 +6,7 @@
 
 static uint32_t idGenerator()
 {
-    static uint32_t counter = 0;
+    static uint32_t counter = 1;
     return counter++;
 }
 
@@ -60,6 +60,13 @@ void SceneNode::orphan()
     mParent = nullptr;
 }
 
+void SceneNode::markDirty()
+{
+    mDirty = true;
+    for (auto child : mChildren)
+        child->markDirty();
+}
+
 uint32_t SceneNode::id() const
 {
     return mID;
@@ -99,13 +106,6 @@ void SceneNode::setLocalTransform(const glm::mat4 &transform)
 bool SceneNode::operator<(const SceneNode* other) const
 {
     return std::less<std::string>()(mName, other->mName);
-}
-
-void SceneNode::markDirty()
-{
-    mDirty = true;
-    for (auto child : mChildren)
-        child->markDirty();
 }
 
 void SceneNode::updateGlobalTransform()

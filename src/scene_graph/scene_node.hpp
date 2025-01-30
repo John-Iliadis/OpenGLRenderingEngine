@@ -30,6 +30,7 @@ public:
     void addChild(SceneNode* child);
     void removeChild(SceneNode* child);
     void orphan();
+    void markDirty();
 
     uint32_t id() const;
     NodeType type() const;
@@ -42,9 +43,6 @@ public:
     virtual void updateGlobalTransform();
 
     bool operator<(const SceneNode* other) const;
-
-private:
-    void markDirty();
 
 protected:
     uint32_t mID;

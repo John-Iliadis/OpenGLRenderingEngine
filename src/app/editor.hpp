@@ -12,10 +12,10 @@
 #include <imgui/imgui_impl_opengl3.h>
 #include "../utils.hpp"
 #include "../scene_graph/scene_graph.hpp"
+#include "../renderer/model.hpp"
 
 class Renderer;
 class ResourceManager;
-class Model;
 
 class Editor
 {
@@ -33,11 +33,14 @@ private:
     void displayModels();
     void displayMaterials();
     void displayTextures();
+    void modelDragDropSource(uint32_t modelID);
+    void modelDragDropTarget();
 
     void sceneGraph();
     void sceneNodeRecursive(SceneNode* node);
     void sceneNodeDragDropSource(SceneNode* node);
     void sceneNodeDragDropTarget(SceneNode* node);
+    SceneNode* addSceneNode(std::shared_ptr<Model> model, const Model::Node& modelNode, SceneNode* parent);
 
     void viewport();
 

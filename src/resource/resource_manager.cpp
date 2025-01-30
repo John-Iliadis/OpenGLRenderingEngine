@@ -178,8 +178,8 @@ void ResourceManager::addModel(std::shared_ptr<LoadedModelData> modelData)
         mMeshes.emplace(meshID, loadedMesh.mesh);
         mMeshMetaData.emplace(meshID, loadedMesh.name);
 
-        model->meshes.emplace_back(i, insertedMaterialIndexMap.at(loadedMesh.materialIndex));
-        model->indirectMeshMap.emplace(i, mMeshes.size() - 1);
+        model->meshes.emplace_back(i, loadedMesh.materialIndex);
+        model->indirectMeshMap.emplace(i, meshID);
     }
 
     // update SSBOs
@@ -199,7 +199,7 @@ void ResourceManager::deleteModel(uint32_t modelID)
     // delete model meshes
     std::unordered_set<uint32_t> meshIDs;
     for (const auto& mesh : model->meshes)
-        meshIDs.insert(model->getMeshIndex(mesh.meshIndex));
+        meshIDs.insert(model->getMeshID(mesh));
 
     for (uint32_t meshID : meshIDs)
     {
