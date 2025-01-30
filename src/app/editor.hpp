@@ -13,10 +13,12 @@
 #include "../utils.hpp"
 #include "../scene_graph/scene_graph.hpp"
 #include "../renderer/model.hpp"
+#include "../renderer/camera.hpp"
 
 class Renderer;
 class ResourceManager;
 
+// todo: resize camera
 class Editor
 {
 public:
@@ -40,9 +42,12 @@ private:
     void sceneNodeRecursive(SceneNode* node);
     void sceneNodeDragDropSource(SceneNode* node);
     void sceneNodeDragDropTarget(SceneNode* node);
+    void checkPayloadType(const char* type);
     SceneNode* addSceneNode(std::shared_ptr<Model> model, const Model::Node& modelNode, SceneNode* parent);
 
-    void viewport();
+    void viewportPreRender();
+    void viewportPostRender();
+    void cameraPanel();
 
     void imguiInit();
     void imguiTerminate();
@@ -52,7 +57,14 @@ private:
 private:
     std::shared_ptr<Renderer> mRenderer;
     std::shared_ptr<ResourceManager> mResourceManager;
+
+    Camera mCamera;
     SceneGraph mSceneGraph;
+
+    bool mShowViewport;
+    bool mShowAssetPanel;
+    bool mShowSceneGraph;
+    bool mShowCameraPanel;
 };
 
 #endif //OPENGLRENDERINGENGINE_EDITOR_HPP

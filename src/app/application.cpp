@@ -44,8 +44,8 @@ void Application::handleEvents()
 
 void Application::update(float dt)
 {
-    mResourceManager->processMainThreadTasks();
     mEditor.update(dt);
+    mResourceManager->processMainThreadTasks();
     countFPS(dt);
 }
 

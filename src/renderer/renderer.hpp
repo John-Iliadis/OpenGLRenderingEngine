@@ -5,10 +5,19 @@
 #ifndef OPENGLRENDERINGENGINE_RENDERER_HPP
 #define OPENGLRENDERINGENGINE_RENDERER_HPP
 
+#include <glad/glad.h>
+#include "../window/event.hpp"
+#include "camera.hpp"
+
 class Editor;
 
 class Renderer
 {
+public:
+    Renderer();
+    ~Renderer();
+
+private:
     friend class Editor;
 };
 

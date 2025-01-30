@@ -8,6 +8,11 @@
 Editor::Editor(std::shared_ptr<Renderer> renderer, std::shared_ptr<ResourceManager> resourceManager)
     : mRenderer(renderer)
     , mResourceManager(resourceManager)
+    , mCamera({}, 30.f, 1920.f, 1080.f)
+    , mShowViewport(true)
+    , mShowAssetPanel(true)
+    , mShowSceneGraph(true)
+    , mShowCameraPanel(true)
 {
     imguiInit();
 }
@@ -22,13 +27,27 @@ void Editor::update(float dt)
     imguiBegin();
     ImGui::ShowDemoWindow();
     mainMenuBar();
-    assetPanel();
-    sceneGraph();
-    viewport();
+
+    if (mShowAssetPanel)
+        assetPanel();
+
+    if (mShowSceneGraph)
+        sceneGraph();
+
+    if (mShowCameraPanel)
+        cameraPanel();
+
+    if (mShowViewport) // update last
+        viewportPreRender();
 }
 
 void Editor::render()
 {
+    // renderer->renderScene
+
+    if (mShowViewport)
+        viewportPostRender();
+
     imguiEnd();
 }
 
@@ -56,6 +75,11 @@ void Editor::mainMenuBar()
 
         if (ImGui::BeginMenu("View"))
         {
+            ImGui::MenuItem("Viewport", nullptr, &mShowViewport);
+            ImGui::MenuItem("Asset Panel", nullptr, &mShowAssetPanel);
+            ImGui::MenuItem("Scene Graph", nullptr, &mShowSceneGraph);
+            ImGui::MenuItem("Camera Panel", nullptr, &mShowCameraPanel);
+
             ImGui::EndMenu();
         }
 
@@ -65,7 +89,7 @@ void Editor::mainMenuBar()
 
 void Editor::assetPanel()
 {
-    ImGui::Begin("Assets");
+    ImGui::Begin("Assets", &mShowAssetPanel);
 
     static int selectedIndex = 0;
     static const std::array<const char*, 3> items {{
@@ -139,11 +163,12 @@ void Editor::displayTextures()
 
 void Editor::sceneGraph()
 {
-    ImGui::Begin("Scene Graph");
+    ImGui::Begin("Scene Graph", &mShowSceneGraph);
 
     for (auto child : mSceneGraph.mRoot.children())
         sceneNodeRecursive(child);
 
+    // todo: improve drag drop area
     ImGui::Dummy(ImGui::GetContentRegionAvail());
     sceneNodeDragDropTarget(&mSceneGraph.mRoot);
 
@@ -179,6 +204,7 @@ void Editor::sceneNodeDragDropSource(SceneNode *node)
     if (ImGui::BeginDragDropSource())
     {
         ImGui::SetDragDropPayload("SceneNode", &node, sizeof(SceneNode*));
+        ImGui::Text(std::format("{} (Scene Node)", node->name()).c_str());
         ImGui::EndDragDropSource();
     }
 }
@@ -187,6 +213,8 @@ void Editor::sceneNodeDragDropTarget(SceneNode *node)
 {
     if (ImGui::BeginDragDropTarget())
     {
+        checkPayloadType("SceneNode");
+
         if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("SceneNode"))
         {
             SceneNode* transferNode = *(SceneNode**)payload->Data;
@@ -201,11 +229,22 @@ void Editor::sceneNodeDragDropTarget(SceneNode *node)
     }
 }
 
-void Editor::viewport()
+void Editor::viewportPreRender()
 {
-    ImGui::Begin("Viewport");
+    ImGui::Begin("Viewport", &mShowViewport);
+
     ImGui::Dummy(ImGui::GetContentRegionAvail());
     modelDragDropTarget();
+}
+
+void Editor::viewportPostRender()
+{
+    ImGui::End();
+}
+
+void Editor::cameraPanel()
+{
+    ImGui::Begin("Camera", &mShowCameraPanel);
     ImGui::End();
 }
 
@@ -247,6 +286,7 @@ void Editor::modelDragDropSource(uint32_t modelID)
     if (ImGui::BeginDragDropSource())
     {
         ImGui::SetDragDropPayload("Model", &modelID, sizeof(uint32_t));
+        ImGui::Text(std::format("{} (Model)", mResourceManager->mModelMetaData.at(modelID)).c_str());
         ImGui::EndDragDropSource();
     }
 }
@@ -256,6 +296,8 @@ void Editor::modelDragDropTarget()
 {
     if (ImGui::BeginDragDropTarget())
     {
+        checkPayloadType("Model");
+
         if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Model"))
         {
             uint32_t modelID = *(uint32_t*)payload->Data;
@@ -295,4 +337,12 @@ SceneNode *Editor::addSceneNode(std::shared_ptr<Model> model, const Model::Node 
         sceneNode->addChild(addSceneNode(model, child, sceneNode));
 
     return sceneNode;
+}
+
+void Editor::checkPayloadType(const char *type)
+{
+    const ImGuiPayload* payload = ImGui::GetDragDropPayload();
+
+    if (payload && strcmp(payload->DataType, type) != 0)
+        ImGui::SetMouseCursor(ImGuiMouseCursor_NotAllowed);
 }
