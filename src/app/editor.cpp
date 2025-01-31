@@ -12,7 +12,11 @@ Editor::Editor(std::shared_ptr<Renderer> renderer, std::shared_ptr<ResourceManag
     , mShowViewport(true)
     , mShowAssetPanel(true)
     , mShowSceneGraph(true)
-    , mShowCameraPanel(true)
+    , mShowCameraPanel(false)
+    , mShowInspectorPanel(true)
+    , mShowRendererPanel(false)
+    , mShowConsole(true)
+    , mShowDebugPanel(true)
 {
     imguiInit();
 }
@@ -32,10 +36,22 @@ void Editor::update(float dt)
         assetPanel();
 
     if (mShowSceneGraph)
-        sceneGraph();
+        sceneGraphPanel();
 
     if (mShowCameraPanel)
         cameraPanel();
+
+    if (mShowInspectorPanel)
+        inspectorPanel();
+
+    if (mShowRendererPanel)
+        rendererPanel();
+
+    if (mShowDebugPanel)
+        debugPanel();
+
+    if (mShowConsole)
+        console();
 
     if (mShowViewport) // update last
         viewportPreRender();
@@ -81,6 +97,10 @@ void Editor::mainMenuBar()
             ImGui::MenuItem("Asset Panel", nullptr, &mShowAssetPanel);
             ImGui::MenuItem("Scene Graph", nullptr, &mShowSceneGraph);
             ImGui::MenuItem("Camera Panel", nullptr, &mShowCameraPanel);
+            ImGui::MenuItem("Inspector", nullptr, &mShowInspectorPanel);
+            ImGui::MenuItem("Renderer", nullptr, &mShowRendererPanel);
+            ImGui::MenuItem("Console", nullptr, &mShowConsole);
+            ImGui::MenuItem("Debug", nullptr, &mShowDebugPanel);
 
             ImGui::EndMenu();
         }
@@ -163,7 +183,7 @@ void Editor::displayTextures()
     }
 }
 
-void Editor::sceneGraph()
+void Editor::sceneGraphPanel()
 {
     ImGui::Begin("Scene Graph", &mShowSceneGraph);
 
@@ -233,12 +253,19 @@ void Editor::sceneNodeDragDropTarget(SceneNode *node)
 
 void Editor::viewportPreRender()
 {
-    ImGui::Begin("Viewport", &mShowViewport);
+    static constexpr ImGuiWindowFlags windowFlags {
+        ImGuiWindowFlags_NoDecoration |
+        ImGuiWindowFlags_NoScrollbar |
+        ImGuiWindowFlags_NoTitleBar
+    };
+
+    ImGui::Begin("Viewport", &mShowViewport, windowFlags);
 
     ImGui::Dummy(ImGui::GetContentRegionAvail());
     modelDragDropTarget();
 }
 
+// todo: come up with better approach
 void Editor::viewportPostRender()
 {
     ImGui::End();
@@ -393,4 +420,28 @@ void Editor::checkPayloadType(const char *type)
 
     if (payload && strcmp(payload->DataType, type) != 0)
         ImGui::SetMouseCursor(ImGuiMouseCursor_NotAllowed);
+}
+
+void Editor::inspectorPanel()
+{
+    ImGui::Begin("Inspector", &mShowInspectorPanel);
+    ImGui::End();
+}
+
+void Editor::rendererPanel()
+{
+    ImGui::Begin("Renderer", &mShowRendererPanel);
+    ImGui::End();
+}
+
+void Editor::console()
+{
+    ImGui::Begin("Console", &mShowConsole);
+    ImGui::End();
+}
+
+void Editor::debugPanel()
+{
+    ImGui::Begin("Debug", &mShowDebugPanel);
+    ImGui::End();
 }

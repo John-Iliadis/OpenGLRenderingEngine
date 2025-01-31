@@ -30,15 +30,20 @@ public:
 
 private:
     void mainMenuBar();
-
     void assetPanel();
+    void sceneGraphPanel();
+    void cameraPanel();
+    void inspectorPanel();
+    void rendererPanel();
+    void console();
+    void debugPanel();
+
     void displayModels();
     void displayMaterials();
     void displayTextures();
     void modelDragDropSource(uint32_t modelID);
     void modelDragDropTarget();
 
-    void sceneGraph();
     void sceneNodeRecursive(SceneNode* node);
     void sceneNodeDragDropSource(SceneNode* node);
     void sceneNodeDragDropTarget(SceneNode* node);
@@ -47,7 +52,6 @@ private:
 
     void viewportPreRender();
     void viewportPostRender();
-    void cameraPanel();
 
     void imguiInit();
     void imguiTerminate();
@@ -65,6 +69,10 @@ private:
     bool mShowAssetPanel;
     bool mShowSceneGraph;
     bool mShowCameraPanel;
+    bool mShowInspectorPanel;
+    bool mShowRendererPanel;
+    bool mShowConsole;
+    bool mShowDebugPanel;
 };
 
 #endif //OPENGLRENDERINGENGINE_EDITOR_HPP

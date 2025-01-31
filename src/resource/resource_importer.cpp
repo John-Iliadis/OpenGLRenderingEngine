@@ -14,6 +14,8 @@
 // todo: error handling
 // todo: handle texture sampler and wrap
 // todo: look for diffuse map if workflow is specular
+// todo: handle texture loading fails
+// todo: handle "Load error: No LoadImageData callback specified"
 
 namespace ResourceImporter
 {
