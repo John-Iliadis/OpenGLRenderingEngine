@@ -64,6 +64,7 @@ add_executable(${PROJECT_NAME}
         src/scene_graph/scene_graph.hpp
         dependencies/stb/src/stb_image.cpp
         src/renderer/vertex.hpp
+        src/renderer/bounding_box.hpp
 )
 
 add_subdirectory(${DEPENDENCY_DIR}/glad/)

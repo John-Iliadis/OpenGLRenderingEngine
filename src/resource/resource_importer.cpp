@@ -33,6 +33,7 @@ namespace ResourceImporter
             modelData->root = createModelGraph(*gltfModel, gltfModel->nodes.at(gltfModel->scenes.at(0).nodes.at(0)));
             modelData->materials = loadMaterials(*gltfModel);
             modelData->indirectTextureMap = createIndirectTextureToImageMap(*gltfModel);
+            modelData->bb = computeBoundingBox(*gltfModel, 0, glm::identity<glm::mat4>());
 
             // load mesh data
             std::vector<std::future<MeshData>> meshDataFutures;
@@ -105,27 +106,29 @@ namespace ResourceImporter
 
     glm::mat4 getNodeTransformation(const tinygltf::Node& node)
     {
-        if (!node.matrix.empty())
-        {
-            return glm::make_mat4(node.matrix.data());
-        }
-
         glm::mat4 transformation = glm::identity<glm::mat4>();
 
-        if (!node.translation.empty())
+        if (!node.matrix.empty())
         {
-            transformation = glm::translate(transformation, glm::make_vec3((float*)node.translation.data()));
+            transformation = glm::make_mat4(node.matrix.data());
         }
-
-        if (!node.rotation.empty())
+        else
         {
-            glm::quat q = glm::make_quat(node.rotation.data());
-            transformation *= glm::mat4(q);
-        }
+            if (!node.translation.empty())
+            {
+                transformation = glm::translate(transformation, glm::make_vec3((float*)node.translation.data()));
+            }
 
-        if (!node.scale.empty())
-        {
-            transformation = glm::scale(transformation, glm::make_vec3((float*)node.scale.data()));
+            if (!node.rotation.empty())
+            {
+                glm::quat q = glm::make_quat(node.rotation.data());
+                transformation *= glm::mat4(q);
+            }
+
+            if (!node.scale.empty())
+            {
+                transformation = glm::scale(transformation, glm::make_vec3((float*)node.scale.data()));
+            }
         }
 
         return transformation;
@@ -160,7 +163,7 @@ namespace ResourceImporter
 
         const tinygltf::Primitive& primitive = mesh.primitives.at(0);
 
-        size_t vertexCount = model.accessors.at(primitive.attributes.at("POSITION")).count;
+        size_t vertexCount = getVertexCount(model, primitive);
         vertices.reserve(vertexCount);
 
         const float* positionBuffer = getBufferVertexData(model, primitive, "POSITION");
@@ -212,6 +215,13 @@ namespace ResourceImporter
         }
 
         return data;
+    }
+
+    uint32_t getVertexCount(const tinygltf::Model& model, const tinygltf::Primitive& primitive)
+    {
+        if (primitive.attributes.contains("POSITION"))
+            return model.accessors.at(primitive.attributes.at("POSITION")).count;
+        return 0;
     }
 
     std::vector<uint32_t> loadMeshIndices(const tinygltf::Model& model, const tinygltf::Mesh& mesh)
@@ -303,5 +313,46 @@ namespace ResourceImporter
         };
 
         return {std::make_shared<Texture2D>(specification, imageData->data()), imageData->path()};
+    }
+
+    BoundingBox computeBoundingBox(const tinygltf::Model& model, int nodeIndex, const glm::mat4& parentTransform)
+    {
+        BoundingBox bb;
+
+        const tinygltf::Node &node = model.nodes[nodeIndex];
+
+        glm::mat4 nodeTransform = parentTransform * getNodeTransformation(node);
+
+        if (node.mesh != -1)
+        {
+            const tinygltf::Mesh &mesh = model.meshes[node.mesh];
+
+            for (const auto &primitive : mesh.primitives)
+            {
+                const float *positions = getBufferVertexData(model, primitive, "POSITION");
+
+                if (!positions)
+                    continue;
+
+                size_t vertexCount = getVertexCount(model, primitive);
+                for (size_t i = 0; i < vertexCount; i++)
+                {
+                    glm::vec4 vertex = glm::vec4(glm::make_vec3(&positions[i * 3]), 1.f);
+
+                    glm::vec3 transformedVertex = glm::vec3(nodeTransform * vertex);
+
+                    bb.expand(transformedVertex);
+                }
+            }
+        }
+
+        for (int child : node.children)
+        {
+            BoundingBox childBb = computeBoundingBox(model, child, nodeTransform);
+            bb.min = glm::min(bb.min, childBb.min);
+            bb.max = glm::max(bb.max, childBb.max);
+        }
+
+        return bb;
     }
 }

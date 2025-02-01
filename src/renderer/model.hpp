@@ -6,6 +6,7 @@
 #define OPENGLRENDERINGENGINE_MODEL_HPP
 
 #include <glm/glm.hpp>
+#include "bounding_box.hpp"
 #include "instanced_mesh.hpp"
 
 class Model
@@ -28,6 +29,7 @@ public:
 public:
     Node root;
     std::vector<Mesh> meshes;
+    BoundingBox bb;
     std::unordered_map<uint32_t, uint32_t> indirectMeshMap; // Model::Mesh::meshIndex -> ResourceManager::mMeshes (meshID)
     std::unordered_map<uint32_t, std::string> indirectMaterialMap; // Model::Mesh::materialIndex -> Model::mappedMaterials
     std::unordered_map<std::string, uint32_t> mappedMaterials; // mappedMaterials -> ResourceManager::mMaterials (index)

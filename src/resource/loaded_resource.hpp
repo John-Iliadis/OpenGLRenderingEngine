@@ -6,6 +6,7 @@
 #define OPENGLRENDERINGENGINE_LOADED_RESOURCE_HPP
 
 #include "../renderer/instanced_mesh.hpp"
+#include "../renderer/bounding_box.hpp"
 #include "../renderer/material.hpp"
 #include "../renderer/model.hpp"
 #include "../opengl/texture.hpp"
@@ -56,6 +57,7 @@ struct LoadedModelData
     std::filesystem::path path;
     std::string name;
     Model::Node root;
+    BoundingBox bb;
     std::vector<Mesh> meshes;
     std::vector<Material> materials;
     std::vector<std::pair<std::shared_ptr<Texture2D>, std::filesystem::path>> textures;

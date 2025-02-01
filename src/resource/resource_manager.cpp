@@ -109,6 +109,8 @@ void ResourceManager::addModel(std::shared_ptr<LoadedModelData> modelData)
     std::shared_ptr<Model> model = std::make_shared<Model>();
 
     model->root = std::move(modelData->root);
+    model->bb = modelData->bb;
+
     uint32_t modelID = getModelID(model);
 
     mModels.emplace(modelID, model);

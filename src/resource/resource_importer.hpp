@@ -31,6 +31,8 @@ namespace ResourceImporter
 
     const float* getBufferVertexData(const tinygltf::Model& model, const tinygltf::Primitive& primitive, const std::string& attribute);
 
+    uint32_t getVertexCount(const tinygltf::Model& model, const tinygltf::Primitive& primitive);
+
     std::vector<uint32_t> loadMeshIndices(const tinygltf::Model& model, const tinygltf::Mesh& mesh);
 
     std::vector<LoadedModelData::Material> loadMaterials(const tinygltf::Model& model);
@@ -40,6 +42,8 @@ namespace ResourceImporter
     std::future<std::shared_ptr<LoadedImage>> loadImageData(const tinygltf::Image& image, const std::filesystem::path& directory);
 
     std::pair<std::shared_ptr<Texture2D>, std::filesystem::path> makeTexturePathPair(const std::shared_ptr<LoadedImage>& imageData);
+
+    BoundingBox computeBoundingBox(const tinygltf::Model& model, int nodeIndex, const glm::mat4& parentTransform);
 }
 
 #endif //OPENGLRENDERINGENGINE_RESOURCE_IMPORTER_HPP
