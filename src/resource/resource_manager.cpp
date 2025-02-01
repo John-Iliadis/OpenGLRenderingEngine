@@ -4,9 +4,9 @@
 
 #include "resource_manager.hpp"
 
-static uint64_t makeBindless(uint32_t textureID)
+static gpu_tex_handle64_t makeBindless(uint32_t textureID)
 {
-    uint64_t gpuTextureHandle = glGetTextureHandleARB(textureID);
+    gpu_tex_handle64_t gpuTextureHandle = glGetTextureHandleARB(textureID);
     glMakeTextureHandleResidentARB(gpuTextureHandle);
     return gpuTextureHandle;
 }
@@ -20,15 +20,17 @@ static bool resourceLoaded(const std::unordered_map<T, std::filesystem::path>& r
 }
 
 template <typename T>
-static uint32_t sharedPtrHash(const std::shared_ptr<T> ptr) { return std::hash<std::shared_ptr<T>>()(ptr); }
-
-uint32_t getModelID(const std::shared_ptr<Model> model) { return sharedPtrHash(model); }
-uint32_t getMeshID(const std::shared_ptr<InstancedMesh> mesh) { return sharedPtrHash(mesh); }
-uint32_t getTextureID(const std::shared_ptr<Texture2D> texture) { return sharedPtrHash(texture); }
+static std::optional<uuid64_t> getTID(const std::unordered_map<uuid64_t, T>& resourceMap, const T& t)
+{
+    for (const auto& [id, item] : resourceMap)
+        if (item == t)
+            return id;
+    return {};
+}
 
 ResourceManager::ResourceManager()
     : SubscriberSNS({Topic::Type::ResourceManager, Topic::Type::SceneGraph})
-    , mBindlessTextureSSBO(GL_SHADER_STORAGE_BUFFER, GL_DYNAMIC_DRAW, 1, 1024 * sizeof(uint64_t), nullptr)
+    , mBindlessTextureSSBO(GL_SHADER_STORAGE_BUFFER, GL_DYNAMIC_DRAW, 1, 1024 * sizeof(gpu_tex_handle64_t), nullptr)
     , mMaterialsSSBO(GL_SHADER_STORAGE_BUFFER, GL_DYNAMIC_DRAW, 2, 256 * sizeof(Material), nullptr)
 {
     loadDefaultTextures();
@@ -37,7 +39,7 @@ ResourceManager::ResourceManager()
 
 ResourceManager::~ResourceManager()
 {
-    for (uint64_t gpuTextureHandle : mBindlessTextures)
+    for (gpu_tex_handle64_t gpuTextureHandle : mBindlessTextures)
         glMakeTextureHandleNonResidentARB(gpuTextureHandle);
 }
 
@@ -67,9 +69,21 @@ void ResourceManager::notify(const Message &message)
         mMeshes.at(m->meshID)->removeInstance(m->instanceID);
     }
 
+    if (const auto m = message.getIf<Message::MaterialDeleted>())
+    {
+        for (auto& [materialID, materialIndex] : mMaterials)
+        {
+            if (materialIndex == m->removeIndex)
+                materialIndex = 0;
+
+            if (m->transferIndex.has_value() && m->transferIndex == materialIndex)
+                materialIndex = m->removeIndex;
+        }
+    }
+
     if (const auto m = message.getIf<Message::TextureDeleted>())
     {
-        for (auto& material : mMaterials)
+        for (auto& material : mMaterialArray)
         {
             for (uint32_t i = 0; i < MaterialTextureCount; ++i)
             {
@@ -81,7 +95,7 @@ void ResourceManager::notify(const Message &message)
             }
         }
 
-        mMaterialsSSBO.update(0, mMaterials.size() * sizeof(Material), mMaterials.data());
+        mMaterialsSSBO.update(0, mMaterialArray.size() * sizeof(Material), mMaterialArray.data());
     }
 }
 
@@ -103,6 +117,7 @@ void ResourceManager::processMainThreadTasks()
     }
 }
 
+// todo: make this easier to work with
 void ResourceManager::addModel(std::shared_ptr<LoadedModelData> modelData)
 {
     // create model
@@ -111,24 +126,24 @@ void ResourceManager::addModel(std::shared_ptr<LoadedModelData> modelData)
     model->root = std::move(modelData->root);
     model->bb = modelData->bb;
 
-    uint32_t modelID = getModelID(model);
+    uuid64_t modelID = generateUUID();
 
     mModels.emplace(modelID, model);
-    mModelMetaData.emplace(modelID, modelData->name);
+    mModelNames.emplace(modelID, modelData->name);
     mModelPaths.emplace(modelID, modelData->path);
 
     // load textures
-    std::unordered_map<uint32_t, uint32_t> insertedTextureIndexMap; // loaded texture index -> resource index
-    for (uint32_t i = 0; i < modelData->textures.size(); ++i)
+    std::unordered_map<index_t, index_t> insertedTextureIndexMap; // loaded texture index -> resource index
+    for (size_t i = 0; i < modelData->textures.size(); ++i)
     {
         const auto& [texture, texturePath] = modelData->textures.at(i);
 
-        uint32_t textureID = getTextureID(texture);
+        uuid64_t textureID = generateUUID();
         mTextures.emplace(textureID, texture);
-        mTextureMetaData.emplace(textureID, texturePath.filename().string());
+        mTextureNames.emplace(textureID, texturePath.filename().string());
         mTexturePaths.emplace(textureID, texturePath);
 
-        uint64_t gpuTextureHandle = makeBindless(texture->id());
+        gpu_tex_handle64_t gpuTextureHandle = makeBindless(texture->id());
         mBindlessTextureMap.emplace(textureID, gpuTextureHandle);
         mBindlessTextures.push_back(gpuTextureHandle);
 
@@ -136,8 +151,8 @@ void ResourceManager::addModel(std::shared_ptr<LoadedModelData> modelData)
     }
 
     // load materials
-    std::unordered_map<uint32_t, uint32_t> insertedMaterialIndexMap; // loaded material index -> resource index
-    for (uint32_t i = 0; i < modelData->materials.size(); ++i)
+    std::unordered_map<index_t, index_t> insertedMaterialIndexMap; // loaded material index -> resource index
+    for (size_t i = 0; i < modelData->materials.size(); ++i)
     {
         const LoadedModelData::Material& loadedMaterial = modelData->materials.at(i);
 
@@ -157,13 +172,15 @@ void ResourceManager::addModel(std::shared_ptr<LoadedModelData> modelData)
 
             if (textureIndex != -1)
             {
-                uint32_t indirectIndex = modelData->indirectTextureMap.at(textureIndex);
+                index_t indirectIndex = modelData->indirectTextureMap.at(textureIndex);
                 material.textures[ii] = insertedTextureIndexMap.at(indirectIndex);
             }
         }
 
-        mMaterials.push_back(material);
-        mMaterialMetaData.emplace(mMaterials.size() - 1, loadedMaterial.name);
+        uuid64_t materialID = generateUUID();
+        mMaterials.emplace(materialID, mMaterials.size() - 1);
+        mMaterialNames.emplace(materialID, loadedMaterial.name);
+        mMaterialArray.push_back(material);
 
         model->indirectMaterialMap.emplace(i, loadedMaterial.name);
         model->mappedMaterials.emplace(loadedMaterial.name, mMaterials.size() - 1);
@@ -172,66 +189,66 @@ void ResourceManager::addModel(std::shared_ptr<LoadedModelData> modelData)
     }
 
     // load meshes
-    for (uint32_t i = 0; i < modelData->meshes.size(); ++i)
+    for (size_t i = 0; i < modelData->meshes.size(); ++i)
     {
         const LoadedModelData::Mesh& loadedMesh = modelData->meshes.at(i);
 
-        uint32_t meshID = getMeshID(loadedMesh.mesh);
+        uuid64_t meshID = generateUUID();
         mMeshes.emplace(meshID, loadedMesh.mesh);
-        mMeshMetaData.emplace(meshID, loadedMesh.name);
+        mMeshNames.emplace(meshID, loadedMesh.name);
 
         model->meshes.emplace_back(i, loadedMesh.materialIndex);
         model->indirectMeshMap.emplace(i, meshID);
     }
 
     // update SSBOs
-    mBindlessTextureSSBO.update(0, mBindlessTextures.size() * sizeof(uint64_t), mBindlessTextures.data());
-    mMaterialsSSBO.update(0, mMaterials.size() * sizeof(Material), mMaterials.data());
+    mBindlessTextureSSBO.update(0, mBindlessTextures.size() * sizeof(gpu_tex_handle64_t), mBindlessTextures.data());
+    mMaterialsSSBO.update(0, mMaterialArray.size() * sizeof(Material), mMaterialArray.data());
 }
 
-void ResourceManager::deleteModel(uint32_t modelID)
+void ResourceManager::deleteModel(uuid64_t id)
 {
-    std::shared_ptr<Model> model = mModels.at(modelID);
+    std::shared_ptr<Model> model = mModels.at(id);
 
     // delete model
-    mModels.erase(modelID);
-    mModelMetaData.erase(modelID);
-    mModelPaths.erase(modelID);
+    mModels.erase(id);
+    mModelNames.erase(id);
+    mModelPaths.erase(id);
 
     // delete model meshes
-    std::unordered_set<uint32_t> meshIDs;
+    std::unordered_set<uuid64_t> meshIDs;
     for (const auto& mesh : model->meshes)
         meshIDs.insert(model->getMeshID(mesh));
 
-    for (uint32_t meshID : meshIDs)
+    for (uuid64_t meshID : meshIDs)
     {
         mMeshes.erase(meshID);
-        mMeshMetaData.erase(meshID);
+        mMeshNames.erase(meshID);
     }
 
     // send message
-    SNS::publishMessage(Topic::Type::ResourceManager, Message::create<Message::ModelDeleted>(modelID, meshIDs));
+    SNS::publishMessage(Topic::Type::ResourceManager, Message::create<Message::ModelDeleted>(id, meshIDs));
 }
 
-void ResourceManager::deleteTexture(uint32_t textureID)
+void ResourceManager::deleteTexture(uuid64_t id)
 {
-    std::shared_ptr<Texture2D> texture = mTextures.at(textureID);
-    uint32_t removeIndex = mBindlessTextureMap.at(textureID);
+    std::shared_ptr<Texture2D> texture = mTextures.at(id);
+    index_t removeIndex = mBindlessTextureMap.at(id);
 
     // delete texture
-    mTextures.erase(textureID);
-    mTextureMetaData.erase(textureID);
-    mTexturePaths.erase(textureID);
-    mBindlessTextureMap.erase(textureID);
+    mTextures.erase(id);
+    mTextureNames.erase(id);
+    mTexturePaths.erase(id);
+    mBindlessTextureMap.erase(id);
 
     // make bindless texture non resident
     glMakeTextureHandleNonResidentARB(mBindlessTextures.at(removeIndex));
 
     // remove bindless texture handle
-    std::optional<uint32_t> transferIndex;
+    std::optional<index_t> transferIndex;
     if (removeIndex != mBindlessTextures.size() - 1)
     {
-        uint32_t lastIndex = mBindlessTextures.size() - 1;
+        index_t lastIndex = mBindlessTextures.size() - 1;
         std::swap(mBindlessTextures.at(lastIndex), mBindlessTextures.at(removeIndex));
         transferIndex = lastIndex;
     }
@@ -239,32 +256,36 @@ void ResourceManager::deleteTexture(uint32_t textureID)
     mBindlessTextures.pop_back();
 
     // update bindless texture ssbo
-    mBindlessTextureSSBO.update(0, mBindlessTextures.size() * sizeof(uint64_t), mBindlessTextures.data());
+    mBindlessTextureSSBO.update(0, mBindlessTextures.size() * sizeof(gpu_tex_handle64_t), mBindlessTextures.data());
 
     // send message
-    SNS::publishMessage(Topic::Type::SceneGraph, Message::create<Message::TextureDeleted>(removeIndex, transferIndex));
+    SNS::publishMessage(Topic::Type::SceneGraph, Message::create<Message::TextureDeleted>(id, removeIndex, transferIndex));
 }
 
-void ResourceManager::deleteMaterial(uint32_t removeIndex)
+void ResourceManager::deleteMaterial(uuid64_t id)
 {
-    // delete material
-    mMaterialMetaData.erase(removeIndex);
+    index_t removeIndex = mMaterials.at(id);
 
-    std::optional<uint32_t> transferIndex;
-    if (removeIndex != mMaterials.size() - 1)
+    // delete material
+    mMaterials.erase(id);
+    mMaterialNames.erase(id);
+
+    // reformat material array
+    std::optional<index_t> transferIndex;
+    if (removeIndex != mMaterialArray.size() - 1)
     {
-        uint32_t lastIndex = mMaterials.size() - 1;
-        std::swap(mMaterials.at(lastIndex), mMaterials.at(removeIndex));
+        index_t lastIndex = mMaterialArray.size() - 1;
+        std::swap(mMaterialArray.at(lastIndex), mMaterialArray.at(removeIndex));
         transferIndex = lastIndex;
     }
 
-    mMaterials.pop_back();
+    mMaterialArray.pop_back();
 
     // update SSBO
-    mMaterialsSSBO.update(0, mMaterials.size() * sizeof(Material), mMaterials.data());
+    mMaterialsSSBO.update(0, mMaterialArray.size() * sizeof(Material), mMaterialArray.data());
 
     // send message
-    SNS::publishMessage(Topic::Type::ResourceManager, Message::create<Message::MaterialDeleted>(removeIndex, transferIndex));
+    SNS::publishMessage(Topic::Type::ResourceManager, Message::create<Message::MaterialDeleted>(id, removeIndex, transferIndex));
 }
 
 void ResourceManager::loadDefaultTextures()
@@ -304,15 +325,16 @@ void ResourceManager::loadDefaultTextures()
     for (uint32_t i = 0; i < DefaultTextureCount; ++i)
     {
         auto texture = std::make_shared<Texture2D>(textureSpecification, textureData[i]);
-        uint32_t textureId = getTextureID(texture);
+        uuid64_t textureId = generateUUID();
         mTextures.emplace(textureId, texture);
-        mTextureMetaData.emplace(textureId, textureNames[i]);
-        uint64_t gpuTextureHandle = makeBindless(texture->id());
+        mTextureNames.emplace(textureId, textureNames[i]);
+
+        gpu_tex_handle64_t gpuTextureHandle = makeBindless(texture->id());
         mBindlessTextureMap.emplace(textureId, gpuTextureHandle);
         mBindlessTextures.push_back(gpuTextureHandle);
     }
 
-    mBindlessTextureSSBO.update(0, mBindlessTextures.size() * sizeof(uint64_t), mBindlessTextures.data());
+    mBindlessTextureSSBO.update(0, mBindlessTextures.size() * sizeof(gpu_tex_handle64_t), mBindlessTextures.data());
 }
 
 void ResourceManager::loadDefaultMaterial()
@@ -320,7 +342,40 @@ void ResourceManager::loadDefaultMaterial()
     Material material;
     material.textures[BaseColor] = DefaultBaseColorGrey;
 
-    mMaterials.push_back(material);
+    uuid64_t materialID = generateUUID();
+    mMaterials.emplace(materialID, mMaterials.size());
+    mMaterialNames.emplace(materialID, "Default Material");
+    mMaterialArray.push_back(material);
 
-    mMaterialsSSBO.update(0, sizeof(Material), mMaterials.data());
+    mMaterialsSSBO.update(0, sizeof(Material), mMaterialArray.data());
+}
+
+bool ResourceManager::isModel(uuid64_t id)
+{
+    return mModels.contains(id);
+}
+
+bool ResourceManager::isMaterial(uuid64_t id)
+{
+    return mMaterials.contains(id);
+}
+
+bool ResourceManager::isTexture(uuid64_t id)
+{
+    return mTextures.contains(id);
+}
+
+std::optional<uuid64_t> ResourceManager::getModelID(const std::shared_ptr<Model>& model)
+{
+    return getTID(mModels, model);
+}
+
+std::optional<uuid64_t> ResourceManager::getMeshID(const std::shared_ptr<InstancedMesh>& mesh)
+{
+    return getTID(mMeshes, mesh);
+}
+
+std::optional<uuid64_t> ResourceManager::getTextureID(const std::shared_ptr<Texture2D>& texture)
+{
+    return getTID(mTextures, texture);
 }

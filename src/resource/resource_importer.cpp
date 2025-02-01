@@ -98,7 +98,7 @@ namespace ResourceImporter
         if (node.mesh != -1)
             modelNode.mesh = node.mesh;
 
-        for (uint32_t i = 0; i < node.children.size(); ++i)
+        for (size_t i = 0; i < node.children.size(); ++i)
             modelNode.children.push_back(createModelGraph(model, model.nodes.at(node.children.at(i))));
 
         return modelNode;
@@ -143,6 +143,7 @@ namespace ResourceImporter
         };
     }
 
+    // todo: fix that static cast
     std::future<MeshData> createMeshData(const tinygltf::Model& model, const tinygltf::Mesh& mesh)
     {
         debugLog(std::format("ResourceImporter: Loading mesh {}", mesh.name));
@@ -171,28 +172,28 @@ namespace ResourceImporter
         const float* normalsBuffer = getBufferVertexData(model, primitive, "NORMAL");
         const float* tangentBuffer = getBufferVertexData(model, primitive, "TANGENT");
 
-        for (size_t j = 0; j < vertexCount; ++j)
+        for (size_t i = 0; i < vertexCount; ++i)
         {
             Vertex vertex{};
 
             if (positionBuffer)
             {
-                vertex.position = glm::make_vec3(&positionBuffer[j * 3]);
+                vertex.position = glm::make_vec3(&positionBuffer[i * 3]);
             }
 
             if (texCoordsBuffer)
             {
-                vertex.texCoords = glm::make_vec2(&texCoordsBuffer[j * 2]);
+                vertex.texCoords = glm::make_vec2(&texCoordsBuffer[i * 2]);
             }
 
             if (normalsBuffer)
             {
-                vertex.normal = glm::normalize(glm::make_vec3(&normalsBuffer[j * 3]));
+                vertex.normal = glm::normalize(glm::make_vec3(&normalsBuffer[i * 3]));
             }
 
             if (tangentBuffer)
             {
-                vertex.tangent = glm::normalize(glm::make_vec3(&tangentBuffer[j * 3]));
+                vertex.tangent = glm::normalize(glm::make_vec3(&tangentBuffer[i * 3]));
                 vertex.bitangent = glm::normalize(glm::cross(vertex.tangent, vertex.normal));
             }
 
@@ -240,8 +241,8 @@ namespace ResourceImporter
         const tinygltf::Buffer& buffer = model.buffers.at(bufferView.buffer);
         const uint8_t* data = &buffer.data.at(bufferView.byteOffset + accessor.byteOffset);
 
-        for (size_t j = 0; j < accessor.count; ++j)
-            indices.push_back(static_cast<uint32_t>(data[j]));
+        for (size_t i = 0; i < accessor.count; ++i)
+            indices.push_back(static_cast<uint32_t>(data[i]));
 
         return indices;
     }
@@ -249,7 +250,7 @@ namespace ResourceImporter
     std::vector<LoadedModelData::Material> loadMaterials(const tinygltf::Model& model)
     {
         std::vector<LoadedModelData::Material> materials(model.materials.size());
-        for (uint32_t i = 0; i < model.materials.size(); ++i)
+        for (size_t i = 0; i < model.materials.size(); ++i)
         {
             const tinygltf::Material& gltfMaterial = model.materials.at(i);
 
@@ -286,7 +287,7 @@ namespace ResourceImporter
     {
         std::unordered_map<int32_t, int32_t> map;
 
-        for (uint32_t i = 0; i < model.textures.size(); ++i)
+        for (size_t i = 0; i < model.textures.size(); ++i)
             map.emplace(i, model.textures.at(i).source);
 
         return map;

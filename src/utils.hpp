@@ -7,19 +7,19 @@
 
 #include <glfw/glfw3.h>
 #include <glfw/glfw3native.h>
+#include "app/types.hpp"
+
+using Task = std::function<void()>;
 
 void debugLog(const std::string& logMSG);
 
 void check(bool result, const char* msg, std::source_location location = std::source_location::current());
 
-uint32_t stringHash(const std::string& str);
-uint32_t filesystemHash(const std::filesystem::path& path);
+uuid64_t generateUUID();
 
 std::filesystem::path fileDialog();
 
 std::string fileExtension(const std::filesystem::path& path);
-
-using Task = std::function<void()>;
 
 class MainThreadTaskQueue
 {

@@ -4,14 +4,8 @@
 
 #include "scene_node.hpp"
 
-static uint32_t idGenerator()
-{
-    static uint32_t counter = 1;
-    return counter++;
-}
-
 SceneNode::SceneNode()
-    : mID(idGenerator())
+    : mID(generateUUID())
     , mType(NodeType::Empty)
     , mName("")
     , mLocalTransform(glm::identity<glm::mat4>())
@@ -22,7 +16,7 @@ SceneNode::SceneNode()
 }
 
 SceneNode::SceneNode(NodeType type, const std::string &name, const glm::mat4& transformation, SceneNode *parent)
-    : mID(idGenerator())
+    : mID(generateUUID())
     , mType(type)
     , mName(name)
     , mLocalTransform(transformation)
@@ -67,7 +61,7 @@ void SceneNode::markDirty()
         child->markDirty();
 }
 
-uint32_t SceneNode::id() const
+uuid64_t SceneNode::id() const
 {
     return mID;
 }

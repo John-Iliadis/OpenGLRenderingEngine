@@ -41,7 +41,7 @@ private:
     void displayModels();
     void displayMaterials();
     void displayTextures();
-    void modelDragDropSource(uint32_t modelID);
+    void modelDragDropSource(uuid64_t modelID);
     void modelDragDropTarget();
 
     void sceneNodeRecursive(SceneNode* node);

@@ -5,10 +5,11 @@
 #ifndef OPENGLRENDERINGENGINE_SCENE_NODE_HPP
 #define OPENGLRENDERINGENGINE_SCENE_NODE_HPP
 
-#include "glm/glm.hpp"
-#include "glm/gtc/matrix_transform.hpp"
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include "../app/simple_notification_service.hpp"
 #include "../renderer/instanced_mesh.hpp"
+#include "../utils.hpp"
 
 enum class NodeType
 {
@@ -32,7 +33,7 @@ public:
     void orphan();
     void markDirty();
 
-    uint32_t id() const;
+    uuid64_t id() const;
     NodeType type() const;
     const std::string& name() const;
     const std::multiset<SceneNode*>& children() const;
@@ -45,7 +46,7 @@ public:
     bool operator<(const SceneNode* other) const;
 
 protected:
-    uint32_t mID;
+    uuid64_t mID;
     NodeType mType;
     std::string mName;
     glm::mat4 mLocalTransform;

@@ -15,7 +15,7 @@ MeshNode::MeshNode()
 }
 
 MeshNode::MeshNode(NodeType type, const std::string& name, const glm::mat4& transformation, SceneNode* parent,
-                   uint32_t meshID, uint32_t instanceID, uint32_t materialIndex)
+                   uuid64_t meshID, uint32_t instanceID, index_t materialIndex)
     : SceneNode(type, name, transformation, parent)
     , mMeshID(meshID)
     , mInstanceID(instanceID)
@@ -70,7 +70,7 @@ void MeshNode::updateGlobalTransform()
         child->updateGlobalTransform();
 }
 
-uint32_t MeshNode::meshID() const
+uuid64_t MeshNode::meshID() const
 {
     return mMeshID;
 }

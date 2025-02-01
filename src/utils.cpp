@@ -20,14 +20,10 @@ void check(bool result, const char* msg, std::source_location location)
     }
 }
 
-uint32_t stringHash(const std::string& str)
+uuid64_t generateUUID()
 {
-    return static_cast<uint32_t>(std::hash<std::string>()(str));
-}
-
-uint32_t filesystemHash(const std::filesystem::path& path)
-{
-    return static_cast<uint32_t>(std::hash<std::filesystem::path>()(path));
+    static uuid64_t counter = 10;
+    return counter++;
 }
 
 std::filesystem::path fileDialog()

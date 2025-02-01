@@ -157,29 +157,36 @@ void Editor::assetPanel()
 
 void Editor::displayModels()
 {
-    for (auto& [modelID, modelMetadata] : mResourceManager->mModelMetaData)
+    for (const auto& [modelID, modelName] : mResourceManager->mModelNames)
     {
-         if (ImGui::Button(modelMetadata.c_str()))
-         {
-         }
+        if (ImGui::Selectable(modelName.c_str()))
+        {
 
-         modelDragDropSource(modelID);
+        }
+
+        modelDragDropSource(modelID);
     }
 }
 
 void Editor::displayMaterials()
 {
-    for (auto& [materialID, materialMetadata] : mResourceManager->mMaterialMetaData)
+    for (const auto& [materialID, materialName] : mResourceManager->mMaterialNames)
     {
-        ImGui::Button(materialMetadata.c_str());
+        if (ImGui::Selectable(materialName.c_str()))
+        {
+
+        }
     }
 }
 
 void Editor::displayTextures()
 {
-    for (auto& [textureID, textureMetadata] : mResourceManager->mTextureMetaData)
+    for (const auto& [textureID, textureName] : mResourceManager->mTextureNames)
     {
-        ImGui::Button(textureMetadata.c_str());
+        if (ImGui::Selectable(textureName.c_str()))
+        {
+
+        }
     }
 }
 
@@ -356,12 +363,12 @@ void Editor::imguiEnd()
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
-void Editor::modelDragDropSource(uint32_t modelID)
+void Editor::modelDragDropSource(uuid64_t modelID)
 {
     if (ImGui::BeginDragDropSource())
     {
-        ImGui::SetDragDropPayload("Model", &modelID, sizeof(uint32_t));
-        ImGui::Text(std::format("{} (Model)", mResourceManager->mModelMetaData.at(modelID)).c_str());
+        ImGui::SetDragDropPayload("Model", &modelID, sizeof(uuid64_t));
+        ImGui::Text(std::format("{} (Model)", mResourceManager->mModelNames.at(modelID)).c_str());
         ImGui::EndDragDropSource();
     }
 }
@@ -375,7 +382,7 @@ void Editor::modelDragDropTarget()
 
         if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Model"))
         {
-            uint32_t modelID = *(uint32_t*)payload->Data;
+            uuid64_t modelID = *(uuid64_t*)payload->Data;
             std::shared_ptr<Model> model = mResourceManager->mModels.at(modelID);
             mSceneGraph.mRoot.addChild(createModelGraph(model, model->root, &mSceneGraph.mRoot));
         }
@@ -391,9 +398,9 @@ SceneNode *Editor::createModelGraph(std::shared_ptr<Model> model, const Model::N
 
     if (modelNode.mesh.has_value())
     {
-        uint32_t meshID = model->getMeshID(modelNode);
+        uuid64_t meshID = model->getMeshID(modelNode);
         uint32_t instanceID = mResourceManager->mMeshes.at(meshID)->addInstance({}, {}, {});
-        uint32_t materialIndex = model->getMaterialIndex(modelNode);
+        index_t materialIndex = model->getMaterialIndex(modelNode);
 
         sceneNode = new MeshNode(NodeType::Mesh,
                                  modelNode.name,

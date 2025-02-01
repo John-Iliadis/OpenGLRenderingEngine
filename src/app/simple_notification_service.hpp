@@ -6,47 +6,50 @@
 #define OPENGLRENDERINGENGINE_SIMPLE_NOTIFICATION_SERVICE_HPP
 
 #include "../renderer/instanced_mesh.hpp"
+#include "types.hpp"
 
 class Message
 {
 public:
     struct ModelDeleted
     {
-        uint32_t modelID;
-        std::unordered_set<uint32_t> meshIDs;
+        uuid64_t modelID;
+        std::unordered_set<uuid64_t> meshIDs;
     };
 
     struct MaterialDeleted
     {
-        uint32_t removeIndex;
-        std::optional<uint32_t> transferIndex;
+        uuid64_t materialID;
+        index_t removeIndex;
+        std::optional<index_t> transferIndex;
     };
 
     struct TextureDeleted
     {
-        uint32_t removedIndex;
-        std::optional<uint32_t> transferIndex;
+        uuid64_t textureID;
+        index_t removedIndex;
+        std::optional<index_t> transferIndex;
     };
 
     struct MeshInstanceUpdate
     {
-        uint32_t meshID;
-        uint32_t objectID;
+        uuid64_t meshID;
+        uuid64_t objectID;
         uint32_t instanceID;
-        uint32_t materialIndex;
+        index_t materialIndex;
         glm::mat4 transformation;
     };
 
     struct RemoveMeshInstance
     {
-        uint32_t meshID;
+        uuid64_t meshID;
         uint32_t instanceID;
     };
 
     struct MaterialRemap
     {
-        uint32_t meshID;
-        uint32_t newMaterialIndex;
+        uuid64_t meshID;
+        index_t newMaterialIndex;
     };
 
     std::variant<ModelDeleted,

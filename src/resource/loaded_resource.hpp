@@ -17,7 +17,7 @@ struct MeshData
     std::string name;
     std::vector<Vertex> vertices;
     std::vector<uint32_t> indices;
-    uint32_t materialIndex;
+    index_t materialIndex;
 };
 
 struct LoadedModelData
@@ -26,7 +26,7 @@ struct LoadedModelData
     {
         std::string name;
         std::shared_ptr<InstancedMesh> mesh;
-        uint32_t materialIndex;
+        index_t materialIndex;
     };
 
     struct Material
