@@ -16,6 +16,8 @@
 // todo: look for diffuse map if workflow is specular
 // todo: handle texture loading fails
 // todo: handle "Load error: No LoadImageData callback specified"
+// todo: add support for separate metallic/roughness textures
+// todo: add support for lights
 
 namespace ResourceImporter
 {

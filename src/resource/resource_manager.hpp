@@ -23,6 +23,7 @@ uint32_t getModelID(const std::shared_ptr<Model> model);
 uint32_t getMeshID(const std::shared_ptr<InstancedMesh> mesh);
 uint32_t getTextureID(const std::shared_ptr<Texture2D> texture);
 
+// todo: load shaders
 class ResourceManager : public SubscriberSNS
 {
 public:

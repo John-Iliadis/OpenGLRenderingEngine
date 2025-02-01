@@ -8,7 +8,7 @@
 #include "../window/window.hpp"
 #include "../renderer/renderer.hpp"
 #include "../resource/resource_manager.hpp"
-#include "editor.hpp"
+#include "../editor/editor.hpp"
 
 // todo: wait events on window minification
 class Application

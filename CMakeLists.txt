@@ -29,8 +29,8 @@ add_executable(${PROJECT_NAME}
         src/utils.hpp
         src/opengl/utils.cpp
         src/opengl/utils.hpp
-        src/renderer/camera.hpp
-        src/renderer/camera.cpp
+        src/editor/camera.hpp
+        src/editor/camera.cpp
         src/opengl/shader.cpp
         src/opengl/shader.hpp
         src/opengl/texture.cpp
@@ -39,8 +39,8 @@ add_executable(${PROJECT_NAME}
         src/opengl/framebuffer.hpp
         src/opengl/buffer.cpp
         src/opengl/buffer.hpp
-        src/app/editor.cpp
-        src/app/editor.hpp
+        src/editor/editor.cpp
+        src/editor/editor.hpp
         src/renderer/renderer.cpp
         src/renderer/renderer.hpp
         src/resource/resource_manager.cpp

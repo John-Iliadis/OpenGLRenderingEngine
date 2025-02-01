@@ -377,7 +377,7 @@ void Editor::modelDragDropTarget()
         {
             uint32_t modelID = *(uint32_t*)payload->Data;
             std::shared_ptr<Model> model = mResourceManager->mModels.at(modelID);
-            mSceneGraph.mRoot.addChild(addSceneNode(model, model->root, &mSceneGraph.mRoot));
+            mSceneGraph.mRoot.addChild(createModelGraph(model, model->root, &mSceneGraph.mRoot));
         }
 
         ImGui::EndDragDropTarget();
@@ -385,7 +385,7 @@ void Editor::modelDragDropTarget()
 }
 
 // todo: and this
-SceneNode *Editor::addSceneNode(std::shared_ptr<Model> model, const Model::Node &modelNode, SceneNode* parent)
+SceneNode *Editor::createModelGraph(std::shared_ptr<Model> model, const Model::Node &modelNode, SceneNode* parent)
 {
     SceneNode* sceneNode;
 
@@ -409,7 +409,7 @@ SceneNode *Editor::addSceneNode(std::shared_ptr<Model> model, const Model::Node 
     }
 
     for (const auto& child : modelNode.children)
-        sceneNode->addChild(addSceneNode(model, child, sceneNode));
+        sceneNode->addChild(createModelGraph(model, child, sceneNode));
 
     return sceneNode;
 }
