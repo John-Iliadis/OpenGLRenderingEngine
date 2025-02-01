@@ -7,6 +7,7 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include "../app/uuid_registry.hpp"
 #include "../app/simple_notification_service.hpp"
 #include "../renderer/instanced_mesh.hpp"
 #include "../utils.hpp"

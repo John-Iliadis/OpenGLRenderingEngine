@@ -15,8 +15,6 @@ void debugLog(const std::string& logMSG);
 
 void check(bool result, const char* msg, std::source_location location = std::source_location::current());
 
-uuid64_t generateUUID();
-
 std::filesystem::path fileDialog();
 
 std::string fileExtension(const std::filesystem::path& path);

@@ -5,7 +5,7 @@
 #include "scene_node.hpp"
 
 SceneNode::SceneNode()
-    : mID(generateUUID())
+    : mID(UUIDRegistry::generateSceneNodeID())
     , mType(NodeType::Empty)
     , mName("")
     , mLocalTransform(glm::identity<glm::mat4>())
@@ -16,7 +16,7 @@ SceneNode::SceneNode()
 }
 
 SceneNode::SceneNode(NodeType type, const std::string &name, const glm::mat4& transformation, SceneNode *parent)
-    : mID(generateUUID())
+    : mID(UUIDRegistry::generateSceneNodeID())
     , mType(type)
     , mName(name)
     , mLocalTransform(transformation)

@@ -66,6 +66,8 @@ add_executable(${PROJECT_NAME}
         src/renderer/vertex.hpp
         src/renderer/bounding_box.hpp
         src/app/types.hpp
+        src/app/uuid_registry.cpp
+        src/app/uuid_registry.hpp
 )
 
 add_subdirectory(${DEPENDENCY_DIR}/glad/)

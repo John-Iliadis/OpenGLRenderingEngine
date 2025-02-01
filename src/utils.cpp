@@ -20,12 +20,6 @@ void check(bool result, const char* msg, std::source_location location)
     }
 }
 
-uuid64_t generateUUID()
-{
-    static uuid64_t counter = 10;
-    return counter++;
-}
-
 std::filesystem::path fileDialog()
 {
     char filename[260] {};

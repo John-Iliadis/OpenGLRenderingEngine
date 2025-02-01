@@ -6,9 +6,10 @@
 #define OPENGLRENDERINGENGINE_RESOURCE_MANAGER_HPP
 
 #include <glad/glad.h>
+#include "../app/simple_notification_service.hpp"
+#include "../app/uuid_registry.hpp"
 #include "../opengl/shader.hpp"
 #include "../renderer/material.hpp"
-#include "../app/simple_notification_service.hpp"
 #include "resource_importer.hpp"
 
 class Editor;
@@ -29,10 +30,6 @@ public:
     void deleteModel(uuid64_t id);
     void deleteTexture(uuid64_t id);
     void deleteMaterial(uuid64_t id);
-
-    bool isModel(uuid64_t id);
-    bool isMaterial(uuid64_t id);
-    bool isTexture(uuid64_t id);
 
     std::optional<uuid64_t> getModelID(const std::shared_ptr<Model>& model);
     std::optional<uuid64_t> getMeshID(const std::shared_ptr<InstancedMesh>& mesh);

@@ -126,7 +126,7 @@ void ResourceManager::addModel(std::shared_ptr<LoadedModelData> modelData)
     model->root = std::move(modelData->root);
     model->bb = modelData->bb;
 
-    uuid64_t modelID = generateUUID();
+    uuid64_t modelID = UUIDRegistry::generateModelID();
 
     mModels.emplace(modelID, model);
     mModelNames.emplace(modelID, modelData->name);
@@ -138,7 +138,7 @@ void ResourceManager::addModel(std::shared_ptr<LoadedModelData> modelData)
     {
         const auto& [texture, texturePath] = modelData->textures.at(i);
 
-        uuid64_t textureID = generateUUID();
+        uuid64_t textureID = UUIDRegistry::generateTextureID();
         mTextures.emplace(textureID, texture);
         mTextureNames.emplace(textureID, texturePath.filename().string());
         mTexturePaths.emplace(textureID, texturePath);
@@ -177,7 +177,7 @@ void ResourceManager::addModel(std::shared_ptr<LoadedModelData> modelData)
             }
         }
 
-        uuid64_t materialID = generateUUID();
+        uuid64_t materialID = UUIDRegistry::generateMaterialID();
         mMaterials.emplace(materialID, mMaterials.size() - 1);
         mMaterialNames.emplace(materialID, loadedMaterial.name);
         mMaterialArray.push_back(material);
@@ -193,7 +193,7 @@ void ResourceManager::addModel(std::shared_ptr<LoadedModelData> modelData)
     {
         const LoadedModelData::Mesh& loadedMesh = modelData->meshes.at(i);
 
-        uuid64_t meshID = generateUUID();
+        uuid64_t meshID = UUIDRegistry::generateMeshID();
         mMeshes.emplace(meshID, loadedMesh.mesh);
         mMeshNames.emplace(meshID, loadedMesh.name);
 
@@ -325,7 +325,7 @@ void ResourceManager::loadDefaultTextures()
     for (uint32_t i = 0; i < DefaultTextureCount; ++i)
     {
         auto texture = std::make_shared<Texture2D>(textureSpecification, textureData[i]);
-        uuid64_t textureId = generateUUID();
+        uuid64_t textureId = UUIDRegistry::generateTextureID();
         mTextures.emplace(textureId, texture);
         mTextureNames.emplace(textureId, textureNames[i]);
 
@@ -342,27 +342,12 @@ void ResourceManager::loadDefaultMaterial()
     Material material;
     material.textures[BaseColor] = DefaultBaseColorGrey;
 
-    uuid64_t materialID = generateUUID();
+    uuid64_t materialID = UUIDRegistry::generateMaterialID();
     mMaterials.emplace(materialID, mMaterials.size());
     mMaterialNames.emplace(materialID, "Default Material");
     mMaterialArray.push_back(material);
 
     mMaterialsSSBO.update(0, sizeof(Material), mMaterialArray.data());
-}
-
-bool ResourceManager::isModel(uuid64_t id)
-{
-    return mModels.contains(id);
-}
-
-bool ResourceManager::isMaterial(uuid64_t id)
-{
-    return mMaterials.contains(id);
-}
-
-bool ResourceManager::isTexture(uuid64_t id)
-{
-    return mTextures.contains(id);
 }
 
 std::optional<uuid64_t> ResourceManager::getModelID(const std::shared_ptr<Model>& model)
