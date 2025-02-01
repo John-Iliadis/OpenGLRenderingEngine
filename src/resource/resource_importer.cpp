@@ -4,6 +4,7 @@
 
 #include "resource_importer.hpp"
 
+// todo: handle metallicRoughnessOcclusion texture
 // todo: handle multiple scenes
 // todo: handle multiple sub-meshes
 // todo: handle multiple primitive types
@@ -153,9 +154,9 @@ namespace ResourceImporter
         });
     }
 
-    std::vector<InstancedMesh::Vertex> loadMeshVertices(const tinygltf::Model& model, const tinygltf::Mesh& mesh)
+    std::vector<Vertex> loadMeshVertices(const tinygltf::Model& model, const tinygltf::Mesh& mesh)
     {
-        std::vector<InstancedMesh::Vertex> vertices;
+        std::vector<Vertex> vertices;
 
         const tinygltf::Primitive& primitive = mesh.primitives.at(0);
 
@@ -169,7 +170,7 @@ namespace ResourceImporter
 
         for (size_t j = 0; j < vertexCount; ++j)
         {
-            InstancedMesh::Vertex vertex{};
+            Vertex vertex{};
 
             if (positionBuffer)
             {

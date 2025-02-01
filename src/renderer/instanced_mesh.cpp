@@ -4,7 +4,7 @@
 
 #include "instanced_mesh.hpp"
 
-static constexpr uint32_t sVertexSize = sizeof(InstancedMesh::Vertex);
+static constexpr uint32_t sVertexSize = sizeof(Vertex);
 static constexpr uint32_t sInstanceSize = sizeof(InstancedMesh::InstanceData);
 static constexpr uint32_t sInitialInstanceBufferCapacity = 32;
 
@@ -122,11 +122,11 @@ VertexBufferLayout InstancedMesh::getVertexBufferLayout()
     layout.setStride(sVertexSize);
     layout.setStepRate(StepRate::Vertex);
 
-    layout.addAttribute(0, 3, GL_FLOAT, offsetof(InstancedMesh::Vertex, position));
-    layout.addAttribute(1, 2, GL_FLOAT, offsetof(InstancedMesh::Vertex, texCoords));
-    layout.addAttribute(2, 3, GL_FLOAT, offsetof(InstancedMesh::Vertex, normal));
-    layout.addAttribute(3, 3, GL_FLOAT, offsetof(InstancedMesh::Vertex, tangent));
-    layout.addAttribute(4, 3, GL_FLOAT, offsetof(InstancedMesh::Vertex, bitangent));
+    layout.addAttribute(0, 3, GL_FLOAT, offsetof(Vertex, position));
+    layout.addAttribute(1, 2, GL_FLOAT, offsetof(Vertex, texCoords));
+    layout.addAttribute(2, 3, GL_FLOAT, offsetof(Vertex, normal));
+    layout.addAttribute(3, 3, GL_FLOAT, offsetof(Vertex, tangent));
+    layout.addAttribute(4, 3, GL_FLOAT, offsetof(Vertex, bitangent));
 
     return layout;
 }

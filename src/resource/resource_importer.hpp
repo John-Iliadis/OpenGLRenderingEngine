@@ -27,7 +27,7 @@ namespace ResourceImporter
 
     std::future<MeshData> createMeshData(const tinygltf::Model& model, const tinygltf::Mesh& mesh);
 
-    std::vector<InstancedMesh::Vertex> loadMeshVertices(const tinygltf::Model& model, const tinygltf::Mesh& mesh);
+    std::vector<Vertex> loadMeshVertices(const tinygltf::Model& model, const tinygltf::Mesh& mesh);
 
     const float* getBufferVertexData(const tinygltf::Model& model, const tinygltf::Primitive& primitive, const std::string& attribute);
 

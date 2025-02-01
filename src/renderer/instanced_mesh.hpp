@@ -8,19 +8,11 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 #include "../opengl/buffer.hpp"
+#include "vertex.hpp"
 
 class InstancedMesh
 {
 public:
-    struct Vertex
-    {
-        glm::vec3 position;
-        glm::vec2 texCoords;
-        glm::vec3 normal;
-        glm::vec3 tangent;
-        glm::vec3 bitangent;
-    };
-
     struct InstanceData
     {
         glm::mat4 modelMatrix;

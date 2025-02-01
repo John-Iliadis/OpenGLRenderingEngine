@@ -14,7 +14,7 @@
 struct MeshData
 {
     std::string name;
-    std::vector<InstancedMesh::Vertex> vertices;
+    std::vector<Vertex> vertices;
     std::vector<uint32_t> indices;
     uint32_t materialIndex;
 };
