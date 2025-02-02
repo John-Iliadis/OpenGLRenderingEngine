@@ -19,13 +19,13 @@ namespace ResourceImporter
 
     std::shared_ptr<tinygltf::Model> loadGltfScene(const std::filesystem::path& path);
 
-    Model::Node createModelGraph(const tinygltf::Model& model, const tinygltf::Node& node);
+    LoadedModelData::Node createModelGraph(const tinygltf::Model& model, const tinygltf::Node& gltfNode);
 
     glm::mat4 getNodeTransformation(const tinygltf::Node& node);
 
     LoadedModelData::Mesh createMesh(const MeshData& meshData);
 
-    std::future<MeshData> createMeshData(const tinygltf::Model& model, const tinygltf::Mesh& mesh);
+    std::future<MeshData> createMeshData(const tinygltf::Model& model, const tinygltf::Mesh& gltfMesh);
 
     std::vector<Vertex> loadMeshVertices(const tinygltf::Model& model, const tinygltf::Mesh& mesh);
 
@@ -37,7 +37,7 @@ namespace ResourceImporter
 
     std::vector<LoadedModelData::Material> loadMaterials(const tinygltf::Model& model);
 
-    std::unordered_map<int32_t, int32_t> createIndirectTextureToImageMap(const tinygltf::Model& model);
+    std::unordered_map<int32_t, uint32_t> createIndirectTextureToImageMap(const tinygltf::Model& model);
 
     std::future<std::shared_ptr<LoadedImage>> loadImageData(const tinygltf::Image& image, const std::filesystem::path& directory);
 

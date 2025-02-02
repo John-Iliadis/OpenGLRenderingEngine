@@ -384,7 +384,6 @@ void Editor::modelDragDropSource(uuid64_t modelID)
     }
 }
 
-// todo: fix this bullshit
 void Editor::modelDragDropTarget()
 {
     if (ImGui::BeginDragDropTarget())
@@ -394,7 +393,7 @@ void Editor::modelDragDropTarget()
         if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Model"))
         {
             uuid64_t modelID = *(uuid64_t*)payload->Data;
-            std::shared_ptr<Model> model = mResourceManager->mModels.at(modelID);
+            std::shared_ptr<Model> model = mResourceManager->getModel(modelID);
             mSceneGraph.mRoot.addChild(createModelGraph(model, model->root, &mSceneGraph.mRoot));
         }
 
@@ -402,22 +401,24 @@ void Editor::modelDragDropTarget()
     }
 }
 
-// todo: and this
+// todo: fix mesh instance::addInstance
 SceneNode *Editor::createModelGraph(std::shared_ptr<Model> model, const Model::Node &modelNode, SceneNode* parent)
 {
     SceneNode* sceneNode;
 
-    if (modelNode.mesh.has_value())
+    if (auto meshID = modelNode.meshID)
     {
-        uuid64_t meshID = model->getMeshID(modelNode);
-        uint32_t instanceID = mResourceManager->mMeshes.at(meshID)->addInstance({}, {}, {});
-        index_t materialIndex = mResourceManager->mMaterials.at(model->getMaterialID(modelNode));
+        uint32_t instanceID = mResourceManager->mMeshes.at(*meshID)->addInstance({}, {}, {});
+        index_t materialIndex = 0;
+
+        if (auto materialID = model->getMaterialID(modelNode))
+            materialIndex = mResourceManager->getMatIndex(*materialID);
 
         sceneNode = new MeshNode(NodeType::Mesh,
                                  modelNode.name,
                                  modelNode.transformation,
                                  parent,
-                                 meshID,
+                                 *meshID,
                                  instanceID,
                                  materialIndex);
     }

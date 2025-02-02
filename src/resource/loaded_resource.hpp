@@ -17,16 +17,24 @@ struct MeshData
     std::string name;
     std::vector<Vertex> vertices;
     std::vector<uint32_t> indices;
-    index_t materialIndex;
+    std::optional<index_t> materialIndex;
 };
 
 struct LoadedModelData
 {
+    struct Node
+    {
+        std::string name;
+        glm::mat4 transformation;
+        std::optional<index_t> meshIndex;
+        std::vector<Node> children;
+    };
+
     struct Mesh
     {
         std::string name;
         std::shared_ptr<InstancedMesh> mesh;
-        index_t materialIndex;
+        std::optional<index_t> materialIndex;
     };
 
     struct Material
@@ -46,12 +54,17 @@ struct LoadedModelData
 
     std::filesystem::path path;
     std::string name;
-    Model::Node root;
+    Node root;
     BoundingBox bb;
     std::vector<Mesh> meshes;
     std::vector<Material> materials;
     std::vector<std::pair<std::shared_ptr<Texture2D>, std::filesystem::path>> textures;
-    std::unordered_map<int32_t, int32_t> indirectTextureMap;
+    std::unordered_map<int32_t, uint32_t> indirectTextureMap;
+
+    uint32_t getTextureIndex(int32_t matTexIndex) const
+    {
+        return indirectTextureMap.at(matTexIndex);
+    }
 };
 
 #endif //OPENGLRENDERINGENGINE_LOADED_RESOURCE_HPP

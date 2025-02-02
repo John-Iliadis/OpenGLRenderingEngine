@@ -5,15 +5,12 @@
 #include "resource_importer.hpp"
 
 // todo: handle multiple scenes
-// todo: handle multiple sub-meshes
 // todo: handle multiple primitive types
-// todo: handle multiple tex coords
 // todo: handle embedded image data
 // todo: error handling
 // todo: handle texture sampler and wrap
 // todo: handle texture loading fails
 // todo: handle "Load error: No LoadImageData callback specified"
-// todo: add support for lights
 
 namespace ResourceImporter
 {
@@ -83,20 +80,21 @@ namespace ResourceImporter
         return model;
     }
 
-    Model::Node createModelGraph(const tinygltf::Model& model, const tinygltf::Node& node)
+    LoadedModelData::Node createModelGraph(const tinygltf::Model& model, const tinygltf::Node& gltfNode)
     {
-        Model::Node modelNode {
-            .name = node.name,
-            .transformation = getNodeTransformation(node)
+
+        LoadedModelData::Node node {
+            .name = gltfNode.name,
+            .transformation = getNodeTransformation(gltfNode)
         };
 
-        if (node.mesh != -1)
-            modelNode.mesh = node.mesh;
+        if (gltfNode.mesh != -1)
+            node.meshIndex = gltfNode.mesh;
 
-        for (size_t i = 0; i < node.children.size(); ++i)
-            modelNode.children.push_back(createModelGraph(model, model.nodes.at(node.children.at(i))));
+        for (size_t i = 0; i < gltfNode.children.size(); ++i)
+            node.children.push_back(createModelGraph(model, model.nodes.at(gltfNode.children.at(i))));
 
-        return modelNode;
+        return node;
     }
 
     glm::mat4 getNodeTransformation(const tinygltf::Node& node)
@@ -139,17 +137,21 @@ namespace ResourceImporter
     }
 
     // todo: fix that static cast
-    std::future<MeshData> createMeshData(const tinygltf::Model& model, const tinygltf::Mesh& mesh)
+    std::future<MeshData> createMeshData(const tinygltf::Model& model, const tinygltf::Mesh& gltfMesh)
     {
-        debugLog(std::format("ResourceImporter: Loading mesh {}", mesh.name));
-        return std::async(std::launch::async, [&model, &mesh]() -> MeshData
+        debugLog(std::format("ResourceImporter: Loading mesh {}", gltfMesh.name));
+        return std::async(std::launch::async, [&model, &gltfMesh]() -> MeshData
         {
-            return {
-                .name = mesh.name,
-                .vertices = loadMeshVertices(model, mesh),
-                .indices = loadMeshIndices(model, mesh),
-                .materialIndex = static_cast<uint32_t>(mesh.primitives.at(0).material)
+            MeshData meshData {
+                .name = gltfMesh.name,
+                .vertices = loadMeshVertices(model, gltfMesh),
+                .indices = loadMeshIndices(model, gltfMesh)
             };
+
+            if (gltfMesh.primitives.at(0).material != -1)
+                meshData.materialIndex = gltfMesh.primitives.at(0).material;
+
+            return meshData;
         });
     }
 
@@ -293,9 +295,9 @@ namespace ResourceImporter
         return materials;
     }
 
-    std::unordered_map<int32_t, int32_t> createIndirectTextureToImageMap(const tinygltf::Model& model)
+    std::unordered_map<int32_t, uint32_t> createIndirectTextureToImageMap(const tinygltf::Model& model)
     {
-        std::unordered_map<int32_t, int32_t> map;
+        std::unordered_map<int32_t, uint32_t> map;
 
         for (size_t i = 0; i < model.textures.size(); ++i)
             map.emplace(i, model.textures.at(i).source);

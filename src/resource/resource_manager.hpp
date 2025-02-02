@@ -27,6 +27,11 @@ public:
 
     void processMainThreadTasks();
 
+    std::shared_ptr<Model> getModel(uuid64_t id);
+    std::shared_ptr<InstancedMesh> getMesh(uuid64_t id);
+    std::shared_ptr<Texture> getTexture(uuid64_t id);
+    uint32_t getMatIndex(uuid64_t id);
+
     void deleteModel(uuid64_t id);
     void deleteTexture(uuid64_t id);
     void deleteMaterial(uuid64_t id);
@@ -37,6 +42,14 @@ public:
 
 private:
     void addModel(std::shared_ptr<LoadedModelData> modelData);
+    std::unordered_map<index_t, uuid64_t> addMeshes(std::shared_ptr<LoadedModelData> modelData);
+    std::unordered_map<index_t, uint32_t> addTextures(std::shared_ptr<LoadedModelData> modelData);
+    std::unordered_map<std::string, uuid64_t> addMaterials(std::shared_ptr<LoadedModelData> modelData,
+                                                           const std::unordered_map<index_t, uint32_t>& loadedTextureIndexToResourceIndex);
+    Model::Node createModelNodeHierarchy(std::shared_ptr<LoadedModelData> modelData,
+                                         const LoadedModelData::Node& loadedNode,
+                                         const std::unordered_map<index_t, uuid64_t>& loadedMeshIndexToMeshUUID,
+                                         const std::unordered_map<std::string, uuid64_t>& loadedMatNameToMatID);
 
     void loadDefaultTextures();
     void loadDefaultMaterial();
@@ -60,7 +73,7 @@ private:
     ShaderBuffer mBindlessTextureSSBO;
 
     // All materials
-    std::unordered_map<uuid64_t, index_t> mMaterials;
+    std::unordered_map<uuid64_t, uint32_t> mMaterials;
     std::map<uuid64_t, std::string> mMaterialNames;
     std::vector<Material> mMaterialArray;
     ShaderBuffer mMaterialsSSBO;

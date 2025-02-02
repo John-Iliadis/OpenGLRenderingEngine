@@ -7,6 +7,7 @@
 
 #include <glm/glm.hpp>
 #include "../app/simple_notification_service.hpp"
+#include "../app/uuid_registry.hpp"
 #include "bounding_box.hpp"
 #include "instanced_mesh.hpp"
 
@@ -25,6 +26,7 @@ public:
 public:
     Node root;
     BoundingBox bb;
+    std::unordered_map<std::string, uuid64_t> mMappedMaterials;
 
 public:
     Model();
@@ -32,9 +34,8 @@ public:
     void notify(const Message &message) override;
 
     std::optional<uuid64_t> getMaterialID(const Model::Node& node) const;
-
-private:
-    std::unordered_map<std::string, uuid64_t> mMappedMaterials;
 };
+
+std::unordered_set<uuid64_t> getModelMeshIDs(const Model& model);
 
 #endif //OPENGLRENDERINGENGINE_MODEL_HPP

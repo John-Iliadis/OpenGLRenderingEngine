@@ -57,7 +57,6 @@ bool ResourceManager::importModel(const std::filesystem::path &path)
     return true;
 }
 
-// todo: update mapped materials
 void ResourceManager::notify(const Message &message)
 {
     if (const auto m = message.getIf<Message::MeshInstanceUpdate>())
@@ -86,14 +85,35 @@ void ResourceManager::notify(const Message &message)
     {
         for (auto& material : mMaterialArray)
         {
-            for (uint32_t i = 0; i < MaterialTextureCount; ++i)
-            {
-                if (material.textures[i] == m->removedIndex)
-                    material.textures[i] = gDefaultTextureMap.at(i);
+            if (m->removedIndex == material.baseColorTexIndex)
+                material.baseColorTexIndex = DefaultBaseColorTexIndex;
 
-                if (m->transferIndex.has_value() && material.textures[i] == m->transferIndex)
-                    material.textures[i] = m->removedIndex;
-            }
+            if (m->removedIndex == material.metallicRoughnessTexIndex)
+                material.metallicRoughnessTexIndex = DefaultMetallicRoughnessTexIndex;
+
+            if (m->removedIndex == material.normalTexIndex)
+                material.normalTexIndex = DefaultNormalTexIndex;
+
+            if (m->removedIndex == material.aoTexIndex)
+                material.aoTexIndex = DefaultAoTexIndex;
+
+            if (m->removedIndex == material.emissionTexIndex)
+                material.emissionTexIndex = DefaultEmissionTexIndex;
+
+            if (m->transferIndex.has_value() && m->transferIndex == material.baseColorTexIndex)
+                material.baseColorTexIndex = m->removedIndex;
+
+            if (m->transferIndex.has_value() && m->transferIndex == material.metallicRoughnessTexIndex)
+                material.metallicRoughnessTexIndex = m->removedIndex;
+
+            if (m->transferIndex.has_value() && m->transferIndex == material.normalTexIndex)
+                material.normalTexIndex = m->removedIndex;
+
+            if (m->transferIndex.has_value() && m->transferIndex == material.aoTexIndex)
+                material.aoTexIndex = m->removedIndex;
+
+            if (m->transferIndex.has_value() && m->transferIndex == material.emissionTexIndex)
+                material.emissionTexIndex = m->removedIndex;
         }
 
         mMaterialsSSBO.update(0, mMaterialArray.size() * sizeof(Material), mMaterialArray.data());
@@ -118,23 +138,68 @@ void ResourceManager::processMainThreadTasks()
     }
 }
 
-// todo: make this easier to work with
+std::shared_ptr<Model> ResourceManager::getModel(uuid64_t id)
+{
+    return mModels.at(id);
+}
+
+std::shared_ptr<InstancedMesh> ResourceManager::getMesh(uuid64_t id)
+{
+    return mMeshes.at(id);
+}
+
+std::shared_ptr<Texture> ResourceManager::getTexture(uuid64_t id)
+{
+    return mTextures.at(id);
+}
+
+uint32_t ResourceManager::getMatIndex(uuid64_t id)
+{
+    return mMaterials.at(id);
+}
+
 void ResourceManager::addModel(std::shared_ptr<LoadedModelData> modelData)
 {
-    // create model
+    // add meshes, textures, and materials to resources
+    std::unordered_map<index_t, uuid64_t> loadedMeshIndexToMeshUUID = addMeshes(modelData);
+    std::unordered_map<index_t, uint32_t> loadedTextureIndexToResourceIndex = addTextures(modelData);
+    std::unordered_map<std::string, uuid64_t> loadedMatNameToMatID = addMaterials(modelData, loadedTextureIndexToResourceIndex);
+
+    // add model
+    uuid64_t modelID = UUIDRegistry::generateModelID();
     std::shared_ptr<Model> model = std::make_shared<Model>();
 
-    model->root = std::move(modelData->root);
+    model->root = createModelNodeHierarchy(modelData, modelData->root, loadedMeshIndexToMeshUUID, loadedMatNameToMatID);
     model->bb = modelData->bb;
-
-    uuid64_t modelID = UUIDRegistry::generateModelID();
+    model->mMappedMaterials = loadedMatNameToMatID;
 
     mModels.emplace(modelID, model);
     mModelNames.emplace(modelID, modelData->name);
     mModelPaths.emplace(modelID, modelData->path);
+}
 
-    // load textures
-    std::unordered_map<index_t, index_t> insertedTextureIndexMap; // loaded texture index -> resource index
+std::unordered_map<index_t, uuid64_t> ResourceManager::addMeshes(std::shared_ptr<LoadedModelData> modelData)
+{
+    std::unordered_map<index_t, uuid64_t> loadedMeshIndexToMeshUUID;
+
+    for (size_t i = 0; i < modelData->meshes.size(); ++i)
+    {
+        const auto& loadedMesh = modelData->meshes.at(i);
+
+        uuid64_t meshID = UUIDRegistry::generateMeshID();
+        mMeshes.emplace(meshID, loadedMesh.mesh);
+        mMeshNames.emplace(meshID, loadedMesh.name);
+
+        loadedMeshIndexToMeshUUID.emplace(i, meshID);
+    }
+
+    return loadedMeshIndexToMeshUUID;
+}
+
+std::unordered_map<index_t, uint32_t> ResourceManager::addTextures(std::shared_ptr<LoadedModelData> modelData)
+{
+    std::unordered_map<index_t, uint32_t> loadedTextureIndexToResourceIndex;
+
     for (size_t i = 0; i < modelData->textures.size(); ++i)
     {
         const auto& [texture, texturePath] = modelData->textures.at(i);
@@ -144,18 +209,26 @@ void ResourceManager::addModel(std::shared_ptr<LoadedModelData> modelData)
         mTextureNames.emplace(textureID, texturePath.filename().string());
         mTexturePaths.emplace(textureID, texturePath);
 
-        gpu_tex_handle64_t gpuTextureHandle = makeBindless(texture->id());
-        mBindlessTextureMap.emplace(textureID, gpuTextureHandle);
-        mBindlessTextures.push_back(gpuTextureHandle);
+        gpu_tex_handle64_t gpuTexHandle = makeBindless(texture->id());
+        mBindlessTextureMap.emplace(textureID, gpuTexHandle);
+        mBindlessTextures.push_back(gpuTexHandle);
 
-        insertedTextureIndexMap.emplace(i, mBindlessTextures.size() - 1);
+        loadedTextureIndexToResourceIndex.emplace(i, mBindlessTextures.size() - 1);
     }
 
-    // load materials
-    std::unordered_map<index_t, index_t> insertedMaterialIndexMap; // loaded material index -> resource index
+    mBindlessTextureSSBO.update(0, mBindlessTextures.size() * sizeof(gpu_tex_handle64_t), mBindlessTextures.data());
+
+    return loadedTextureIndexToResourceIndex;
+}
+
+std::unordered_map<std::string, uuid64_t> ResourceManager::addMaterials(std::shared_ptr<LoadedModelData> modelData,
+                                                                        const std::unordered_map<index_t, uint32_t> &loadedTextureIndexToResourceIndex)
+{
+    std::unordered_map<std::string, uuid64_t> loadedMatNameToMatID;
+
     for (size_t i = 0; i < modelData->materials.size(); ++i)
     {
-        const LoadedModelData::Material& loadedMaterial = modelData->materials.at(i);
+        const auto& loadedMaterial = modelData->materials.at(i);
 
         Material material {
             .baseColorFactor = loadedMaterial.baseColorFactor,
@@ -167,61 +240,67 @@ void ResourceManager::addModel(std::shared_ptr<LoadedModelData> modelData)
 
         if (loadedMaterial.baseColorTexIndex != -1)
         {
-            index_t indirectIndex = modelData->indirectTextureMap.at(loadedMaterial.baseColorTexIndex);
-            material.baseColorTexIndex = insertedTextureIndexMap.at(indirectIndex);
+            material.baseColorTexIndex = loadedTextureIndexToResourceIndex.at(modelData->getTextureIndex(loadedMaterial.baseColorTexIndex));
         }
 
         if (loadedMaterial.metallicRoughnessTexIndex != -1)
         {
-            index_t indirectIndex = modelData->indirectTextureMap.at(loadedMaterial.metallicRoughnessTexIndex);
-            material.metallicRoughnessTexIndex = insertedTextureIndexMap.at(indirectIndex);
+            material.baseColorTexIndex = loadedTextureIndexToResourceIndex.at(modelData->getTextureIndex(loadedMaterial.baseColorTexIndex));
         }
 
-        if (loadedMaterial.normalTexIndex != -1)
+        if (loadedMaterial.baseColorTexIndex != -1)
         {
-            index_t indirectIndex = modelData->indirectTextureMap.at(loadedMaterial.normalTexIndex);
-            material.normalTexIndex = insertedTextureIndexMap.at(indirectIndex);
+            material.baseColorTexIndex = loadedTextureIndexToResourceIndex.at(modelData->getTextureIndex(loadedMaterial.baseColorTexIndex));
         }
 
-        if (loadedMaterial.aoTexIndex != -1)
+        if (loadedMaterial.baseColorTexIndex != -1)
         {
-            index_t indirectIndex = modelData->indirectTextureMap.at(loadedMaterial.aoTexIndex);
-            material.aoTexIndex = insertedTextureIndexMap.at(indirectIndex);
+            material.baseColorTexIndex = loadedTextureIndexToResourceIndex.at(modelData->getTextureIndex(loadedMaterial.baseColorTexIndex));
         }
 
-        if (loadedMaterial.emissionTexIndex != -1)
+        if (loadedMaterial.baseColorTexIndex != -1)
         {
-            index_t indirectIndex = modelData->indirectTextureMap.at(loadedMaterial.emissionTexIndex);
-            material.emissionTexIndex = insertedTextureIndexMap.at(indirectIndex);
+            material.baseColorTexIndex = loadedTextureIndexToResourceIndex.at(modelData->getTextureIndex(loadedMaterial.baseColorTexIndex));
         }
 
         uuid64_t materialID = UUIDRegistry::generateMaterialID();
-        mMaterials.emplace(materialID, mMaterials.size() - 1);
+        mMaterials.emplace(materialID, mMaterialArray.size());
         mMaterialNames.emplace(materialID, loadedMaterial.name);
         mMaterialArray.push_back(material);
 
-        model->indirectMaterialMap.emplace(i, loadedMaterial.name);
-        model->mappedMaterials.emplace(loadedMaterial.name, materialID);
-
-        insertedMaterialIndexMap.emplace(i, mMaterials.size() - 1);
+        loadedMatNameToMatID.emplace(loadedMaterial.name, materialID);
     }
 
-    // load meshes
-    for (size_t i = 0; i < modelData->meshes.size(); ++i)
-    {
-        const LoadedModelData::Mesh& loadedMesh = modelData->meshes.at(i);
-
-        uuid64_t meshID = UUIDRegistry::generateMeshID();
-        mMeshes.emplace(meshID, loadedMesh.mesh);
-        mMeshNames.emplace(meshID, loadedMesh.name);
-
-        model->meshes.emplace_back(i, loadedMesh.materialIndex);
-        model->indirectMeshMap.emplace(i, meshID);
-    }
-
-    // update SSBOs
-    mBindlessTextureSSBO.update(0, mBindlessTextures.size() * sizeof(gpu_tex_handle64_t), mBindlessTextures.data());
     mMaterialsSSBO.update(0, mMaterialArray.size() * sizeof(Material), mMaterialArray.data());
+
+    return loadedMatNameToMatID;
+}
+
+Model::Node ResourceManager::createModelNodeHierarchy(std::shared_ptr<LoadedModelData> modelData,
+                                                      const LoadedModelData::Node& loadedNode,
+                                                      const std::unordered_map<index_t, uuid64_t>& loadedMeshIndexToMeshUUID,
+                                                      const std::unordered_map<std::string, uuid64_t>& loadedMatNameToMatID)
+{
+    Model::Node node {
+        .name = loadedNode.name,
+        .transformation = loadedNode.transformation
+    };
+
+    if (auto meshIndex = loadedNode.meshIndex)
+    {
+        node.meshID = loadedMeshIndexToMeshUUID.at(*meshIndex);
+
+        if (auto matIndex = modelData->meshes.at(*meshIndex).materialIndex)
+        {
+            node.materialName = modelData->materials.at(*matIndex).name;
+        }
+    }
+
+    for (const auto& child : loadedNode.children)
+        node.children.push_back(
+            createModelNodeHierarchy(modelData, child, loadedMeshIndexToMeshUUID, loadedMatNameToMatID));
+
+    return node;
 }
 
 void ResourceManager::deleteModel(uuid64_t id)
@@ -234,9 +313,7 @@ void ResourceManager::deleteModel(uuid64_t id)
     mModelPaths.erase(id);
 
     // delete model meshes
-    std::unordered_set<uuid64_t> meshIDs;
-    for (const auto& mesh : model->meshes)
-        meshIDs.insert(model->getMeshID(mesh));
+    std::unordered_set<uuid64_t> meshIDs = getModelMeshIDs(*model);
 
     for (uuid64_t meshID : meshIDs)
     {
@@ -348,11 +425,11 @@ void ResourceManager::loadDefaultTextures()
     mTextureNames.emplace(aoID, "Default Ambient Occlusion");
     mTextureNames.emplace(emissionID, "Default Emission");
 
-    gpu_tex_handle64_t baseColorTexHandle = makeBindless(baseColorID);
-    gpu_tex_handle64_t metallicRoughnessTexHandle = makeBindless(metallicRoughnessID);
-    gpu_tex_handle64_t normalTexHandle = makeBindless(normalID);
-    gpu_tex_handle64_t aoTexHandle = makeBindless(aoID);
-    gpu_tex_handle64_t emissionTexHandle = makeBindless(emissionID);
+    gpu_tex_handle64_t baseColorTexHandle = makeBindless(baseColorTex->id());
+    gpu_tex_handle64_t metallicRoughnessTexHandle = makeBindless(metallicRoughnessTex->id());
+    gpu_tex_handle64_t normalTexHandle = makeBindless(normalTex->id());
+    gpu_tex_handle64_t aoTexHandle = makeBindless(aoTex->id());
+    gpu_tex_handle64_t emissionTexHandle = makeBindless(emissionTex->id());
 
     mBindlessTextureMap.emplace(baseColorID, baseColorTexHandle);
     mBindlessTextureMap.emplace(metallicRoughnessID, metallicRoughnessTexHandle);
@@ -371,11 +448,23 @@ void ResourceManager::loadDefaultTextures()
 
 void ResourceManager::loadDefaultMaterial()
 {
-    Material material;
-    material.textures[BaseColor] = DefaultBaseColorGrey;
+    Material material {
+        .baseColorTexIndex = DefaultBaseColorTexIndex,
+        .metallicRoughnessTexIndex = DefaultMetallicRoughnessTexIndex,
+        .normalTexIndex = DefaultNormalTexIndex,
+        .aoTexIndex = DefaultAoTexIndex,
+        .emissionTexIndex = DefaultEmissionTexIndex,
+        .baseColorFactor = glm::vec4(0.5f, 0.5f, 0.5f, 1.f),
+        .emissionFactor = glm::vec4(0.f),
+        .metallicFactor = 1.f,
+        .roughnessFactor = 1.f,
+        .occlusionFactor = 1.f,
+        .tiling = glm::vec2(1.f),
+        .offset = glm::vec2(1.f)
+    };
 
-    uuid64_t materialID = UUIDRegistry::generateMaterialID();
-    mMaterials.emplace(materialID, mMaterials.size());
+    uuid64_t materialID = UUIDRegistry::getDefMatID();
+    mMaterials.emplace(materialID, 0);
     mMaterialNames.emplace(materialID, "Default Material");
     mMaterialArray.push_back(material);
 
