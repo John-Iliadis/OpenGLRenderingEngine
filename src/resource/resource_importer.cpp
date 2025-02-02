@@ -4,20 +4,15 @@
 
 #include "resource_importer.hpp"
 
-// todo: handle metallicRoughnessOcclusion texture
 // todo: handle multiple scenes
 // todo: handle multiple sub-meshes
 // todo: handle multiple primitive types
 // todo: handle multiple tex coords
-// todo: handle textures from extensions
-// todo: handle missing textures
 // todo: handle embedded image data
 // todo: error handling
 // todo: handle texture sampler and wrap
-// todo: look for diffuse map if workflow is specular
 // todo: handle texture loading fails
 // todo: handle "Load error: No LoadImageData callback specified"
-// todo: add support for separate metallic/roughness textures
 // todo: add support for lights
 
 namespace ResourceImporter
@@ -256,25 +251,40 @@ namespace ResourceImporter
 
             materials.at(i).name = gltfMaterial.name;
 
-            int32_t baseColorTextureIndex = gltfMaterial.pbrMetallicRoughness.baseColorTexture.index;
-            int32_t metallicRoughnessTextureIndex = gltfMaterial.pbrMetallicRoughness.metallicRoughnessTexture.index;
-            int32_t normalTextureIndex = gltfMaterial.normalTexture.index;
-            int32_t aoTextureIndex = gltfMaterial.occlusionTexture.index;
-            int32_t emissionTextureIndex = gltfMaterial.emissiveTexture.index;
+            int32_t baseColorTexIndex = gltfMaterial.pbrMetallicRoughness.baseColorTexture.index;
+            int32_t metallicRoughnessTexIndex = gltfMaterial.pbrMetallicRoughness.metallicRoughnessTexture.index;
+            int32_t normalTexIndex = gltfMaterial.normalTexture.index;
+            int32_t aoTexIndex = gltfMaterial.occlusionTexture.index;
+            int32_t emissionTexIndex = gltfMaterial.emissiveTexture.index;
 
-            if (baseColorTextureIndex != -1)
-                materials.at(i).textures[BaseColor] = model.textures.at(baseColorTextureIndex).source;
-            if (metallicRoughnessTextureIndex != -1)
-                materials.at(i).textures[MetallicRoughness] = model.textures.at(metallicRoughnessTextureIndex).source;
-            if (normalTextureIndex != -1)
-                materials.at(i).textures[Normal] = model.textures.at(normalTextureIndex).source;
-            if (aoTextureIndex != -1)
-                materials.at(i).textures[Ao] = model.textures.at(aoTextureIndex).source;
-            if (emissionTextureIndex != -1)
-                materials.at(i).textures[Emission] = model.textures.at(emissionTextureIndex).source;
+            if (baseColorTexIndex != -1)
+            {
+                materials.at(i).baseColorTexIndex = model.textures.at(baseColorTexIndex).source;
+            }
+
+            if (metallicRoughnessTexIndex != -1)
+            {
+                materials.at(i).metallicRoughnessTexIndex = model.textures.at(metallicRoughnessTexIndex).source;
+            }
+
+            if (normalTexIndex != -1)
+            {
+                materials.at(i).normalTexIndex = model.textures.at(normalTexIndex).source;
+            }
+
+            if (aoTexIndex != -1)
+            {
+                materials.at(i).aoTexIndex = model.textures.at(aoTexIndex).source;
+            }
+
+            if (emissionTexIndex != -1)
+            {
+                materials.at(i).emissionTexIndex = model.textures.at(emissionTexIndex).source;
+            }
 
             materials.at(i).baseColorFactor = glm::make_vec4(gltfMaterial.pbrMetallicRoughness.baseColorFactor.data());
-            materials.at(i).emissionFactor = glm::vec4(glm::make_vec3(gltfMaterial.emissiveFactor.data()), 0.f);
+            materials.at(i).emissionColorFactor = glm::vec4(glm::make_vec3(gltfMaterial.emissiveFactor.data()), 0.f);
+
             materials.at(i).metallicFactor = static_cast<float>(gltfMaterial.pbrMetallicRoughness.metallicFactor);
             materials.at(i).roughnessFactor = static_cast<float>(gltfMaterial.pbrMetallicRoughness.roughnessFactor);
             materials.at(i).occlusionFactor = static_cast<float>(gltfMaterial.occlusionTexture.strength);

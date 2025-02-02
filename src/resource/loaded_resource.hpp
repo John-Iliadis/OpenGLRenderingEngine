@@ -32,26 +32,16 @@ struct LoadedModelData
     struct Material
     {
         std::string name;
-        int32_t textures[MaterialTextureCount];
+        int32_t baseColorTexIndex = -1;
+        int32_t metallicRoughnessTexIndex = -1;
+        int32_t normalTexIndex = -1;
+        int32_t aoTexIndex = -1;
+        int32_t emissionTexIndex = -1;
         glm::vec4 baseColorFactor = glm::vec4(1.f);
-        glm::vec4 emissionFactor = glm::vec4(0.f);
-        glm::vec4 specularGlossinessFactor = glm::vec4(1.f);
+        glm::vec4 emissionColorFactor = glm::vec4(0.f);
         float metallicFactor = 1.f;
         float roughnessFactor = 1.f;
         float occlusionFactor = 1.f;
-        float specularFactor = 1.f;
-
-        Material()
-            : baseColorFactor(1.f)
-            , emissionFactor(0.f)
-            , specularGlossinessFactor(1.f)
-            , metallicFactor(1.f)
-            , roughnessFactor(1.f)
-            , occlusionFactor(1.f)
-            , specularFactor(1.f)
-        {
-            memset(textures, -1, MaterialTextureCount * sizeof(int32_t));
-        }
     };
 
     std::filesystem::path path;

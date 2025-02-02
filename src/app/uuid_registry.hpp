@@ -6,6 +6,7 @@
 #define OPENGLRENDERINGENGINE_UUID_REGISTRY_HPP
 
 #include "types.hpp"
+#include "../renderer/material.hpp"
 
 enum class ObjectType
 {
@@ -26,10 +27,12 @@ public:
     static uuid64_t generateSceneNodeID();
     static ObjectType getObjectType(uuid64_t id);
 
+    static uuid64_t getDefMatID();
+    static uuid64_t getDefTexID(MatTexType matTexType);
+
 private:
     static uuid64_t generateID(ObjectType type);
     static inline std::unordered_map<uuid64_t, ObjectType> mIdToType;
 };
-
 
 #endif //OPENGLRENDERINGENGINE_UUID_REGISTRY_HPP

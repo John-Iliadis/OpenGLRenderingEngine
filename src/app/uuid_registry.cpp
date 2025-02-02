@@ -40,3 +40,34 @@ uuid64_t UUIDRegistry::generateSceneNodeID()
 {
     return generateID(ObjectType::SceneNode);
 }
+
+uuid64_t UUIDRegistry::getDefMatID()
+{
+    static const uuid64_t defaultMaterialID = generateMaterialID();
+    return defaultMaterialID;
+}
+
+uuid64_t UUIDRegistry::getDefTexID(MatTexType matTexType)
+{
+    static const uuid64_t baseColor = generateTextureID();
+    static const uuid64_t metallic = generateTextureID();
+    static const uuid64_t roughness = generateTextureID();
+    static const uuid64_t normal = generateTextureID();
+    static const uuid64_t ao = generateTextureID();
+    static const uuid64_t emission = generateTextureID();
+    static const uuid64_t specular = generateTextureID();
+    static const uuid64_t displacement = generateTextureID();
+
+    switch (matTexType)
+    {
+        case MatTexType::BaseColor: return baseColor;
+        case MatTexType::Metallic: return metallic;
+        case MatTexType::Roughness: return roughness;
+        case MatTexType::Normal: return normal;
+        case MatTexType::Ao: return ao;
+        case MatTexType::Emission: return emission;
+        case MatTexType::Specular: return specular;
+        case MatTexType::Displacement: return displacement;
+        default: assert(false);
+    }
+}

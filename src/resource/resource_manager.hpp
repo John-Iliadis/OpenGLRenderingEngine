@@ -61,7 +61,7 @@ private:
 
     // All materials
     std::unordered_map<uuid64_t, index_t> mMaterials;
-    std::unordered_map<uuid64_t, std::string> mMaterialNames;
+    std::map<uuid64_t, std::string> mMaterialNames;
     std::vector<Material> mMaterialArray;
     ShaderBuffer mMaterialsSSBO;
 

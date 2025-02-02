@@ -9,6 +9,7 @@ Editor::Editor(std::shared_ptr<Renderer> renderer, std::shared_ptr<ResourceManag
     : mRenderer(renderer)
     , mResourceManager(resourceManager)
     , mCamera({}, 30.f, 1920.f, 1080.f)
+    , mSelectedObject()
     , mShowViewport(true)
     , mShowAssetPanel(true)
     , mShowSceneGraph(true)
@@ -159,9 +160,9 @@ void Editor::displayModels()
 {
     for (const auto& [modelID, modelName] : mResourceManager->mModelNames)
     {
-        if (ImGui::Selectable(modelName.c_str()))
+        if (ImGui::Selectable(modelName.c_str(), mSelectedObject == modelID))
         {
-
+            mSelectedObject = modelID;
         }
 
         modelDragDropSource(modelID);
@@ -172,9 +173,9 @@ void Editor::displayMaterials()
 {
     for (const auto& [materialID, materialName] : mResourceManager->mMaterialNames)
     {
-        if (ImGui::Selectable(materialName.c_str()))
+        if (ImGui::Selectable(materialName.c_str(), mSelectedObject == materialID))
         {
-
+            mSelectedObject = materialID;
         }
     }
 }
@@ -183,9 +184,9 @@ void Editor::displayTextures()
 {
     for (const auto& [textureID, textureName] : mResourceManager->mTextureNames)
     {
-        if (ImGui::Selectable(textureName.c_str()))
+        if (ImGui::Selectable(textureName.c_str(), mSelectedObject == textureID))
         {
-
+            mSelectedObject = textureID;
         }
     }
 }
@@ -208,13 +209,23 @@ void Editor::sceneGraphPanel()
 
 void Editor::sceneNodeRecursive(SceneNode *node)
 {
-    static constexpr ImGuiTreeNodeFlags treeNodeFlags {
+    ImGuiTreeNodeFlags treeNodeFlags {
         ImGuiTreeNodeFlags_OpenOnArrow |
         ImGuiTreeNodeFlags_OpenOnDoubleClick |
-        ImGuiTreeNodeFlags_SpanAvailWidth
+        ImGuiTreeNodeFlags_SpanFullWidth |
+        ImGuiTreeNodeFlags_FramePadding
     };
 
+    if (mSelectedObject == node->id())
+        treeNodeFlags |= ImGuiTreeNodeFlags_Selected;
+
+    if (node->children().empty())
+        treeNodeFlags |= ImGuiTreeNodeFlags_Leaf;
+
     bool nodeOpen = ImGui::TreeNodeEx((void*)(intptr_t)node, treeNodeFlags, node->name().c_str());
+
+    if (ImGui::IsItemClicked())
+        mSelectedObject = node->id();
 
     sceneNodeDragDropSource(node);
     sceneNodeDragDropTarget(node);
@@ -400,7 +411,7 @@ SceneNode *Editor::createModelGraph(std::shared_ptr<Model> model, const Model::N
     {
         uuid64_t meshID = model->getMeshID(modelNode);
         uint32_t instanceID = mResourceManager->mMeshes.at(meshID)->addInstance({}, {}, {});
-        index_t materialIndex = model->getMaterialIndex(modelNode);
+        index_t materialIndex = mResourceManager->mMaterials.at(model->getMaterialID(modelNode));
 
         sceneNode = new MeshNode(NodeType::Mesh,
                                  modelNode.name,
@@ -451,4 +462,17 @@ void Editor::debugPanel()
 {
     ImGui::Begin("Debug", &mShowDebugPanel);
     ImGui::End();
+}
+
+void Editor::modelInspector(uuid64_t modelID)
+{
+    std::shared_ptr<Model> model = mResourceManager->mModels.at(modelID);
+
+    std::vector<const char*> materialNames;
+    materialNames.reserve(mResourceManager->mTextureNames.size());
+
+    for (const auto& [materialID, materialName] : mResourceManager->mMaterialNames)
+        materialNames.push_back(materialName.c_str());
+
+
 }

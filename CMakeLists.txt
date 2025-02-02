@@ -68,6 +68,7 @@ add_executable(${PROJECT_NAME}
         src/app/types.hpp
         src/app/uuid_registry.cpp
         src/app/uuid_registry.hpp
+        src/renderer/model.cpp
 )
 
 add_subdirectory(${DEPENDENCY_DIR}/glad/)

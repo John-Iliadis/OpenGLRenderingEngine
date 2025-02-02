@@ -6,54 +6,35 @@
 #define OPENGLRENDERINGENGINE_MODEL_HPP
 
 #include <glm/glm.hpp>
+#include "../app/simple_notification_service.hpp"
 #include "bounding_box.hpp"
 #include "instanced_mesh.hpp"
 
-class Model
+class Model : public SubscriberSNS
 {
 public:
     struct Node
     {
         std::string name;
         glm::mat4 transformation;
-        std::optional<index_t> mesh;
+        std::optional<uuid64_t> meshID;
+        std::optional<std::string> materialName;
         std::vector<Node> children;
-    };
-
-    struct Mesh
-    {
-        index_t meshIndex;
-        index_t materialIndex;
     };
 
 public:
     Node root;
-    std::vector<Mesh> meshes;
     BoundingBox bb;
-    std::unordered_map<index_t, uuid64_t> indirectMeshMap; // Model::Mesh::meshIndex -> ResourceManager::mMeshes (meshID)
-    std::unordered_map<index_t, std::string> indirectMaterialMap; // Model::Mesh::materialIndex -> Model::mappedMaterials
-    std::unordered_map<std::string, index_t> mappedMaterials; // mappedMaterials -> ResourceManager::mMaterials (index)
 
 public:
-    void remapMaterial(const std::string& name, index_t materialIndex)
-    {
-        mappedMaterials.at(name) = materialIndex;
-    }
+    Model();
 
-    index_t getMaterialIndex(const Model::Node& node) const
-    {
-        return mappedMaterials.at(indirectMaterialMap.at(meshes.at(node.mesh.value()).materialIndex));
-    }
+    void notify(const Message &message) override;
 
-    uuid64_t getMeshID(const Model::Node& node) const
-    {
-        return indirectMeshMap.at(meshes.at(node.mesh.value()).meshIndex);
-    }
+    std::optional<uuid64_t> getMaterialID(const Model::Node& node) const;
 
-    uuid64_t getMeshID(const Model::Mesh& mesh) const
-    {
-        return indirectMeshMap.at(mesh.meshIndex);
-    }
+private:
+    std::unordered_map<std::string, uuid64_t> mMappedMaterials;
 };
 
 #endif //OPENGLRENDERINGENGINE_MODEL_HPP

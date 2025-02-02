@@ -33,7 +33,6 @@ private:
     void assetPanel();
     void sceneGraphPanel();
     void cameraPanel();
-    void inspectorPanel();
     void rendererPanel();
     void console();
     void debugPanel();
@@ -43,6 +42,9 @@ private:
     void displayTextures();
     void modelDragDropSource(uuid64_t modelID);
     void modelDragDropTarget();
+
+    void inspectorPanel();
+    void modelInspector(uuid64_t modelID);
 
     void sceneNodeRecursive(SceneNode* node);
     void sceneNodeDragDropSource(SceneNode* node);
@@ -64,6 +66,8 @@ private:
 
     Camera mCamera;
     SceneGraph mSceneGraph;
+
+    uuid64_t mSelectedObject;
 
     bool mShowViewport;
     bool mShowAssetPanel;
