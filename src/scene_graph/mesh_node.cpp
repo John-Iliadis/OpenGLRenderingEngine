@@ -7,22 +7,23 @@
 MeshNode::MeshNode()
     : SceneNode()
     , mMeshID()
-    , mMaterialIndex()
+    , mMatIndex()
     , mInstanceID()
     , mModifiedMaterial()
 {
-    subscribe(Topic::Type::ResourceManager);
+    subscribe(Topic::Type::Resources);
 }
 
 MeshNode::MeshNode(NodeType type, const std::string& name, const glm::mat4& transformation, SceneNode* parent,
-                   uuid64_t meshID, uint32_t instanceID, index_t materialIndex)
+                   uuid64_t meshID, uint32_t instanceID, index_t materialIndex, const std::string& matName)
     : SceneNode(type, name, transformation, parent)
     , mMeshID(meshID)
     , mInstanceID(instanceID)
-    , mMaterialIndex(materialIndex)
+    , mMatIndex(materialIndex)
+    , mMatName(matName)
     , mModifiedMaterial()
 {
-    subscribe(Topic::Type::ResourceManager);
+    subscribe(Topic::Type::Resources);
 }
 
 MeshNode::~MeshNode()
@@ -34,17 +35,20 @@ void MeshNode::notify(const Message &message)
 {
     if (const auto m = message.getIf<Message::MaterialDeleted>())
     {
-        if (m->removeIndex == mMaterialIndex)
-            mMaterialIndex = 0;
+        if (m->removeIndex == mMatIndex)
+            mMatIndex = 0;
 
-        if (m->transferIndex.has_value() && m->transferIndex == mMaterialIndex)
-            mMaterialIndex = m->removeIndex;
+        if (m->transferIndex.has_value() && m->transferIndex == mMatIndex)
+            mMatIndex = m->removeIndex;
     }
 
     if (const auto m = message.getIf<Message::MaterialRemap>())
     {
-        if (!mModifiedMaterial && mMeshID == m->meshID)
-            mMaterialIndex = m->newMaterialIndex;
+        if (!mModifiedMaterial && mMatName == m->matName)
+        {
+            mMatIndex = m->newMatIndex;
+            SNS::publishMessage(Topic::Type::SceneGraph, Message::create<Message::MeshInstanceUpdate>(mMeshID, mID, mInstanceID, mMatIndex, mGlobalTransform));
+        }
     }
 }
 
@@ -63,7 +67,7 @@ void MeshNode::updateGlobalTransform()
 
         mDirty = false;
 
-        SNS::publishMessage(Topic::Type::SceneGraph, Message::create<Message::MeshInstanceUpdate>(mMeshID, mID, mInstanceID, mMaterialIndex, mGlobalTransform));
+        SNS::publishMessage(Topic::Type::SceneGraph, Message::create<Message::MeshInstanceUpdate>(mMeshID, mID, mInstanceID, mMatIndex, mGlobalTransform));
     }
 
     for (auto child : mChildren)

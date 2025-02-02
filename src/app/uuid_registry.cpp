@@ -11,9 +11,11 @@ uuid64_t UUIDRegistry::generateID(ObjectType type)
     return counter++;
 }
 
-ObjectType UUIDRegistry::getObjectType(uuid64_t id)
+std::optional<ObjectType> UUIDRegistry::getObjectType(uuid64_t id)
 {
-    return mIdToType.at(id);
+    if (mIdToType.contains(id))
+        return mIdToType.at(id);
+    return std::nullopt;
 }
 
 uuid64_t UUIDRegistry::generateModelID()

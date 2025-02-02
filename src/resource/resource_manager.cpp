@@ -29,7 +29,7 @@ static std::optional<uuid64_t> getTID(const std::unordered_map<uuid64_t, T>& res
 }
 
 ResourceManager::ResourceManager()
-    : SubscriberSNS({Topic::Type::ResourceManager, Topic::Type::SceneGraph})
+    : SubscriberSNS({Topic::Type::Resources, Topic::Type::SceneGraph})
     , mBindlessTextureSSBO(GL_SHADER_STORAGE_BUFFER, GL_DYNAMIC_DRAW, 1, 1024 * sizeof(gpu_tex_handle64_t), nullptr)
     , mMaterialsSSBO(GL_SHADER_STORAGE_BUFFER, GL_DYNAMIC_DRAW, 2, 256 * sizeof(Material), nullptr)
 {
@@ -61,7 +61,7 @@ void ResourceManager::notify(const Message &message)
 {
     if (const auto m = message.getIf<Message::MeshInstanceUpdate>())
     {
-        mMeshes.at(m->meshID)->updateInstance(m->instanceID, m->transformation, m->objectID, m->materialIndex);
+        mMeshes.at(m->meshID)->updateInstance(m->instanceID, m->transformation, m->objectID, m->matIndex);
     }
 
     if (const auto m = message.getIf<Message::RemoveMeshInstance>())
@@ -171,7 +171,7 @@ void ResourceManager::addModel(std::shared_ptr<LoadedModelData> modelData)
 
     model->root = createModelNodeHierarchy(modelData, modelData->root, loadedMeshIndexToMeshUUID, loadedMatNameToMatID);
     model->bb = modelData->bb;
-    model->mMappedMaterials = loadedMatNameToMatID;
+    model->mappedMaterials = loadedMatNameToMatID;
 
     mModels.emplace(modelID, model);
     mModelNames.emplace(modelID, modelData->name);
@@ -322,7 +322,7 @@ void ResourceManager::deleteModel(uuid64_t id)
     }
 
     // send message
-    SNS::publishMessage(Topic::Type::ResourceManager, Message::create<Message::ModelDeleted>(id, meshIDs));
+    SNS::publishMessage(Topic::Type::Resources, Message::create<Message::ModelDeleted>(id, meshIDs));
 }
 
 void ResourceManager::deleteTexture(uuid64_t id)
@@ -380,7 +380,7 @@ void ResourceManager::deleteMaterial(uuid64_t id)
     mMaterialsSSBO.update(0, mMaterialArray.size() * sizeof(Material), mMaterialArray.data());
 
     // send message
-    SNS::publishMessage(Topic::Type::ResourceManager, Message::create<Message::MaterialDeleted>(id, removeIndex, transferIndex));
+    SNS::publishMessage(Topic::Type::Resources, Message::create<Message::MaterialDeleted>(id, removeIndex, transferIndex));
 }
 
 void ResourceManager::loadDefaultTextures()

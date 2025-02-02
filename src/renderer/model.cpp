@@ -14,7 +14,7 @@ void Model::notify(const Message &message)
 {
     if (const auto m = message.getIf<Message::MaterialDeleted>())
     {
-        for (auto& [materialName, materialID] : mMappedMaterials)
+        for (auto& [materialName, materialID] : mappedMaterials)
         {
             if (materialID == m->materialID)
                 materialID = UUIDRegistry::getDefMatID();
@@ -25,8 +25,18 @@ void Model::notify(const Message &message)
 std::optional<uuid64_t> Model::getMaterialID(const Model::Node &node) const
 {
     if (node.materialName.has_value())
-        return mMappedMaterials.at(node.materialName.value());
+        return mappedMaterials.at(node.materialName.value());
     return std::nullopt;
+}
+
+void Model::remapMaterial(const std::string &materialName, uuid64_t newMatID, uint32_t newMatIndex)
+{
+    if (mappedMaterials.contains(materialName))
+    {
+        mappedMaterials.at(materialName) = newMatID;
+
+        SNS::publishMessage(Topic::Type::Resources, Message::create<Message::MaterialRemap>(newMatIndex, materialName));
+    }
 }
 
 static void getModelMeshesRecursive(const Model::Node& node, std::unordered_set<uuid64_t>& meshIDs)

@@ -12,7 +12,7 @@ class MeshNode : public SceneNode
 public:
     MeshNode();
     MeshNode(NodeType type, const std::string& name, const glm::mat4& transformation, SceneNode* parent,
-             uuid64_t meshID, uint32_t instanceID, index_t materialIndex);
+             uuid64_t meshID, uint32_t instanceID, index_t materialIndex, const std::string& matName);
     ~MeshNode();
 
     void notify(const Message &message) override;
@@ -24,7 +24,8 @@ public:
 private:
     uuid64_t mMeshID;
     uint32_t mInstanceID;
-    index_t mMaterialIndex;
+    index_t mMatIndex;
+    std::string mMatName;
     bool mModifiedMaterial;
 };
 

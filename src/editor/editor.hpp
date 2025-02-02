@@ -19,6 +19,7 @@ class Renderer;
 class ResourceManager;
 
 // todo: resize camera
+// todo: when the selected model gets deleted, assign 0 to mSelectedObjectID
 class Editor
 {
 public:
@@ -67,7 +68,7 @@ private:
     Camera mCamera;
     SceneGraph mSceneGraph;
 
-    uuid64_t mSelectedObject;
+    uuid64_t mSelectedObjectID;
 
     bool mShowViewport;
     bool mShowAssetPanel;

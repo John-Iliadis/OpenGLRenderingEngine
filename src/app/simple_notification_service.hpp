@@ -36,7 +36,7 @@ public:
         uuid64_t meshID;
         uuid64_t objectID;
         uint32_t instanceID;
-        index_t materialIndex;
+        index_t matIndex;
         glm::mat4 transformation;
     };
 
@@ -48,8 +48,8 @@ public:
 
     struct MaterialRemap
     {
-        uuid64_t meshID;
-        index_t newMaterialIndex;
+        uint32_t newMatIndex;
+        std::string matName;
     };
 
     std::variant<ModelDeleted,
@@ -90,7 +90,7 @@ public:
         None = 0,
         Editor,
         SceneGraph,
-        ResourceManager,
+        Resources,
         Count
     };
 

@@ -25,7 +25,7 @@ public:
     static uuid64_t generateMaterialID();
     static uuid64_t generateMeshID();
     static uuid64_t generateSceneNodeID();
-    static ObjectType getObjectType(uuid64_t id);
+    static std::optional<ObjectType> getObjectType(uuid64_t id);
 
     static uuid64_t getDefMatID();
     static uuid64_t getDefTexID(MatTexType matTexType);

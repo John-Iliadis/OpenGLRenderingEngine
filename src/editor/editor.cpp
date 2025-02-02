@@ -9,7 +9,7 @@ Editor::Editor(std::shared_ptr<Renderer> renderer, std::shared_ptr<ResourceManag
     : mRenderer(renderer)
     , mResourceManager(resourceManager)
     , mCamera({}, 30.f, 1920.f, 1080.f)
-    , mSelectedObject()
+    , mSelectedObjectID()
     , mShowViewport(true)
     , mShowAssetPanel(true)
     , mShowSceneGraph(true)
@@ -31,6 +31,7 @@ void Editor::update(float dt)
 {
     imguiBegin();
     ImGui::ShowDemoWindow();
+
     mainMenuBar();
 
     if (mShowAssetPanel)
@@ -160,9 +161,9 @@ void Editor::displayModels()
 {
     for (const auto& [modelID, modelName] : mResourceManager->mModelNames)
     {
-        if (ImGui::Selectable(modelName.c_str(), mSelectedObject == modelID))
+        if (ImGui::Selectable(modelName.c_str(), mSelectedObjectID == modelID))
         {
-            mSelectedObject = modelID;
+            mSelectedObjectID = modelID;
         }
 
         modelDragDropSource(modelID);
@@ -173,9 +174,9 @@ void Editor::displayMaterials()
 {
     for (const auto& [materialID, materialName] : mResourceManager->mMaterialNames)
     {
-        if (ImGui::Selectable(materialName.c_str(), mSelectedObject == materialID))
+        if (ImGui::Selectable(materialName.c_str(), mSelectedObjectID == materialID))
         {
-            mSelectedObject = materialID;
+            mSelectedObjectID = materialID;
         }
     }
 }
@@ -184,9 +185,9 @@ void Editor::displayTextures()
 {
     for (const auto& [textureID, textureName] : mResourceManager->mTextureNames)
     {
-        if (ImGui::Selectable(textureName.c_str(), mSelectedObject == textureID))
+        if (ImGui::Selectable(textureName.c_str(), mSelectedObjectID == textureID))
         {
-            mSelectedObject = textureID;
+            mSelectedObjectID = textureID;
         }
     }
 }
@@ -216,7 +217,7 @@ void Editor::sceneNodeRecursive(SceneNode *node)
         ImGuiTreeNodeFlags_FramePadding
     };
 
-    if (mSelectedObject == node->id())
+    if (mSelectedObjectID == node->id())
         treeNodeFlags |= ImGuiTreeNodeFlags_Selected;
 
     if (node->children().empty())
@@ -225,7 +226,7 @@ void Editor::sceneNodeRecursive(SceneNode *node)
     bool nodeOpen = ImGui::TreeNodeEx((void*)(intptr_t)node, treeNodeFlags, node->name().c_str());
 
     if (ImGui::IsItemClicked())
-        mSelectedObject = node->id();
+        mSelectedObjectID = node->id();
 
     sceneNodeDragDropSource(node);
     sceneNodeDragDropTarget(node);
@@ -402,6 +403,7 @@ void Editor::modelDragDropTarget()
 }
 
 // todo: fix mesh instance::addInstance
+// todo: what if node doesn't have a material
 SceneNode *Editor::createModelGraph(std::shared_ptr<Model> model, const Model::Node &modelNode, SceneNode* parent)
 {
     SceneNode* sceneNode;
@@ -410,9 +412,13 @@ SceneNode *Editor::createModelGraph(std::shared_ptr<Model> model, const Model::N
     {
         uint32_t instanceID = mResourceManager->mMeshes.at(*meshID)->addInstance({}, {}, {});
         index_t materialIndex = 0;
+        std::string matName = "";
 
         if (auto materialID = model->getMaterialID(modelNode))
             materialIndex = mResourceManager->getMatIndex(*materialID);
+
+        if (auto& matNameOpt = modelNode.materialName)
+            matName = *matNameOpt;
 
         sceneNode = new MeshNode(NodeType::Mesh,
                                  modelNode.name,
@@ -420,7 +426,8 @@ SceneNode *Editor::createModelGraph(std::shared_ptr<Model> model, const Model::N
                                  parent,
                                  *meshID,
                                  instanceID,
-                                 materialIndex);
+                                 materialIndex,
+                                 matName);
     }
     else
     {
@@ -444,6 +451,11 @@ void Editor::checkPayloadType(const char *type)
 void Editor::inspectorPanel()
 {
     ImGui::Begin("Inspector", &mShowInspectorPanel);
+
+    if (auto objectType = UUIDRegistry::getObjectType(mSelectedObjectID))
+        if (*objectType == ObjectType::Model)
+            modelInspector(mSelectedObjectID);
+
     ImGui::End();
 }
 
@@ -467,13 +479,32 @@ void Editor::debugPanel()
 
 void Editor::modelInspector(uuid64_t modelID)
 {
-    std::shared_ptr<Model> model = mResourceManager->mModels.at(modelID);
+    auto model = mResourceManager->getModel(modelID);
 
-    std::vector<const char*> materialNames;
-    materialNames.reserve(mResourceManager->mTextureNames.size());
+    ImGui::Text("Asset type: Model");
+    ImGui::Text("Name: %s", mResourceManager->mModelNames.at(modelID).c_str());
+    ImGui::Separator();
 
-    for (const auto& [materialID, materialName] : mResourceManager->mMaterialNames)
-        materialNames.push_back(materialName.c_str());
+    if (ImGui::CollapsingHeader("Mapped Materials"))
+    {
+        for (const auto& [mappedMaterialName, mappedMaterialID] : model->mappedMaterials)
+        {
+            const char* selectedMat = mResourceManager->mMaterialNames.at(mappedMaterialID).c_str();
 
+            if (ImGui::BeginCombo(mappedMaterialName.c_str(), selectedMat))
+            {
+                for (const auto& [materialID, materialName] : mResourceManager->mMaterialNames)
+                {
+                    bool selected = mappedMaterialID == materialID;
+                    if (ImGui::Selectable(materialName.c_str(), selected))
+                    {
+                        index_t materialIndex = mResourceManager->getMatIndex(materialID);
+                        model->remapMaterial(mappedMaterialName, materialID, materialIndex);
+                    }
+                }
 
+                ImGui::EndCombo();
+            }
+        }
+    }
 }
