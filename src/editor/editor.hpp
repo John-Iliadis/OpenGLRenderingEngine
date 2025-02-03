@@ -41,20 +41,27 @@ private:
     void displayModels();
     void displayMaterials();
     void displayTextures();
-    void modelDragDropSource(uuid64_t modelID);
-    void modelDragDropTarget();
 
     void inspectorPanel();
     void modelInspector(uuid64_t modelID);
+    void materialInspector(uuid64_t materialID);
+    bool materialTextureInspector(index_t& textureIndex, std::string label);
 
     void sceneNodeRecursive(SceneNode* node);
-    void sceneNodeDragDropSource(SceneNode* node);
-    void sceneNodeDragDropTarget(SceneNode* node);
     void checkPayloadType(const char* type);
     SceneNode* createModelGraph(std::shared_ptr<Model> model, const Model::Node& modelNode, SceneNode* parent);
 
     void viewportPreRender();
     void viewportPostRender();
+
+    void sceneNodeDragDropSource(SceneNode* node);
+    void sceneNodeDragDropTarget(SceneNode* node);
+    void modelDragDropSource(uuid64_t modelID);
+    void modelDragDropTarget();
+    void textureDragDropSource(uuid64_t textureID);
+    bool textureDragDropTarget(index_t& textureIndex);
+
+    std::optional<uuid64_t> textureCombo(uuid64_t selectedTextureID);
 
     void imguiInit();
     void imguiTerminate();
@@ -78,6 +85,8 @@ private:
     bool mShowRendererPanel;
     bool mShowConsole;
     bool mShowDebugPanel;
+
+    std::unordered_map<std::string, ImFont*> mFonts;
 };
 
 #endif //OPENGLRENDERINGENGINE_EDITOR_HPP

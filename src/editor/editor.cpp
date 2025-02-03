@@ -189,6 +189,8 @@ void Editor::displayTextures()
         {
             mSelectedObjectID = textureID;
         }
+
+        textureDragDropSource(textureID);
     }
 }
 
@@ -375,33 +377,6 @@ void Editor::imguiEnd()
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
-void Editor::modelDragDropSource(uuid64_t modelID)
-{
-    if (ImGui::BeginDragDropSource())
-    {
-        ImGui::SetDragDropPayload("Model", &modelID, sizeof(uuid64_t));
-        ImGui::Text(std::format("{} (Model)", mResourceManager->mModelNames.at(modelID)).c_str());
-        ImGui::EndDragDropSource();
-    }
-}
-
-void Editor::modelDragDropTarget()
-{
-    if (ImGui::BeginDragDropTarget())
-    {
-        checkPayloadType("Model");
-
-        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Model"))
-        {
-            uuid64_t modelID = *(uuid64_t*)payload->Data;
-            std::shared_ptr<Model> model = mResourceManager->getModel(modelID);
-            mSceneGraph.mRoot.addChild(createModelGraph(model, model->root, &mSceneGraph.mRoot));
-        }
-
-        ImGui::EndDragDropTarget();
-    }
-}
-
 // todo: fix mesh instance::addInstance
 // todo: what if node doesn't have a material
 SceneNode *Editor::createModelGraph(std::shared_ptr<Model> model, const Model::Node &modelNode, SceneNode* parent)
@@ -456,6 +431,10 @@ void Editor::inspectorPanel()
         if (*objectType == ObjectType::Model)
             modelInspector(mSelectedObjectID);
 
+    if (auto objectType = UUIDRegistry::getObjectType(mSelectedObjectID))
+        if (*objectType == ObjectType::Material)
+            materialInspector(mSelectedObjectID);
+
     ImGui::End();
 }
 
@@ -485,7 +464,8 @@ void Editor::modelInspector(uuid64_t modelID)
     ImGui::Text("Name: %s", mResourceManager->mModelNames.at(modelID).c_str());
     ImGui::Separator();
 
-    if (ImGui::CollapsingHeader("Mapped Materials"))
+    // todo: put this into a function
+    if (ImGui::CollapsingHeader("Mapped Materials", ImGuiTreeNodeFlags_DefaultOpen))
     {
         for (const auto& [mappedMaterialName, mappedMaterialID] : model->mappedMaterials)
         {
@@ -507,4 +487,183 @@ void Editor::modelInspector(uuid64_t modelID)
             }
         }
     }
+
+    ImGui::Text("Todo: Add reset button");
+}
+
+void Editor::materialInspector(uuid64_t materialID)
+{
+    static constexpr ImGuiColorEditFlags sColorEditFlags {
+        ImGuiColorEditFlags_DisplayRGB |
+        ImGuiColorEditFlags_AlphaBar
+    };
+
+    index_t matIndex = mResourceManager->getMatIndex(materialID);
+    Material& material = mResourceManager->mMaterialArray.at(matIndex);
+
+    ImGui::Text("Asset type: Material");
+    ImGui::Text("Name: %s", mResourceManager->mMaterialNames.at(materialID).c_str());
+    ImGui::Separator();
+
+    bool matNeedsUpdate = false;
+
+    if (ImGui::CollapsingHeader("Material Textures", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        if (materialTextureInspector(material.baseColorTexIndex, "Base Color"))
+            matNeedsUpdate = true;
+        if (materialTextureInspector(material.metallicRoughnessTexIndex, "Metallic Roughness"))
+            matNeedsUpdate = true;
+        if (materialTextureInspector(material.normalTexIndex, "Normal"))
+            matNeedsUpdate = true;
+        if (materialTextureInspector(material.aoTexIndex, "Ambient Occlusion"))
+            matNeedsUpdate = true;
+        if (materialTextureInspector(material.emissionTexIndex, "Emission"))
+            matNeedsUpdate = true;
+    }
+
+    if (ImGui::CollapsingHeader("Factors", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        if (ImGui::ColorEdit4("Base Color Factor", &material.baseColorFactor[0], sColorEditFlags))
+            matNeedsUpdate = true;
+
+        if (ImGui::ColorEdit3("Emission Factor", &material.emissionFactor[0], sColorEditFlags))
+            matNeedsUpdate = true;
+
+        if (ImGui::SliderFloat("Metallic Factor", &material.metallicFactor, 0.f, 1.f))
+            matNeedsUpdate = true;
+
+        if (ImGui::SliderFloat("Roughness Factor", &material.roughnessFactor, 0.f, 1.f))
+            matNeedsUpdate = true;
+
+        if (ImGui::SliderFloat("Occlusion Factor", &material.occlusionFactor, 0.f, 1.f))
+            matNeedsUpdate = true;
+    }
+
+    if (ImGui::CollapsingHeader("Texture Coordinates", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        if (ImGui::DragFloat2("Tiling", &material.tiling[0], 0.01f))
+            matNeedsUpdate = true;
+
+        if (ImGui::DragFloat2("Offset", &material.offset[0], 0.01f))
+            matNeedsUpdate = true;
+    }
+
+    if (matNeedsUpdate)
+        mResourceManager->updateMaterial(matIndex);
+}
+
+bool Editor::materialTextureInspector(index_t &textureIndex, std::string label)
+{
+    static constexpr ImVec2 sImageSize = ImVec2(20.f, 20.f);
+    static constexpr ImVec2 sTooltipImageSize = ImVec2(250.f, 250.f);
+    static constexpr ImVec2 sImageButtonFramePadding = ImVec2(2.f, 2.f);
+    static const ImVec2 sTextSize = ImGui::CalcTextSize("H");
+
+    std::shared_ptr<Texture2D> texture = mResourceManager->getTextureFromIndex(textureIndex);
+
+    bool matNeedsUpdate = false;
+
+    uuid64_t textureID = mResourceManager->getTexIDFromIndex(textureIndex);
+
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, sImageButtonFramePadding);
+    if (ImGui::ImageButton((ImTextureID)(intptr_t)texture->id(), sImageSize))
+        ImGui::OpenPopup(label.c_str());
+    ImGui::PopStyleVar();
+
+    if (ImGui::BeginPopup(label.c_str()))
+    {
+        ImGui::SeparatorText("Select Texture:");
+
+        if (auto selectedTexID = textureCombo(textureID))
+        {
+            textureIndex = mResourceManager->getTextureIndex(*selectedTexID);
+            matNeedsUpdate = true;
+        }
+
+        ImGui::EndPopup();
+    }
+
+    if (textureDragDropTarget(textureIndex))
+        matNeedsUpdate = true;
+
+    if (ImGui::BeginItemTooltip())
+    {
+        ImGui::Image((ImTextureID)(intptr_t)texture->id(), sTooltipImageSize);
+        ImGui::EndTooltip();
+    }
+
+    ImGui::SameLine();
+    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + sImageSize.y / 2.f - sTextSize.y / 2.f + 1.f);
+    ImGui::Text("%s | (%s)", label.c_str(), mResourceManager->mTextureNames.at(textureID).c_str());
+
+    return matNeedsUpdate;
+}
+
+void Editor::modelDragDropSource(uuid64_t modelID)
+{
+    if (ImGui::BeginDragDropSource())
+    {
+        ImGui::SetDragDropPayload("Model", &modelID, sizeof(uuid64_t));
+        ImGui::Text("%s (Model)", mResourceManager->mModelNames.at(modelID).c_str());
+        ImGui::EndDragDropSource();
+    }
+}
+
+void Editor::modelDragDropTarget()
+{
+    if (ImGui::BeginDragDropTarget())
+    {
+        checkPayloadType("Model");
+
+        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Model"))
+        {
+            uuid64_t modelID = *(uuid64_t*)payload->Data;
+            std::shared_ptr<Model> model = mResourceManager->getModel(modelID);
+            mSceneGraph.mRoot.addChild(createModelGraph(model, model->root, &mSceneGraph.mRoot));
+        }
+
+        ImGui::EndDragDropTarget();
+    }
+}
+
+void Editor::textureDragDropSource(uuid64_t textureID)
+{
+    if (ImGui::BeginDragDropSource())
+    {
+        ImGui::SetDragDropPayload("Texture", &textureID, sizeof(uuid64_t));
+        ImGui::Text("%s (Texture)", mResourceManager->mTextureNames.at(textureID).c_str());
+        ImGui::EndDragDropSource();
+    }
+}
+
+bool Editor::textureDragDropTarget(index_t& textureIndex)
+{
+    if (ImGui::BeginDragDropTarget())
+    {
+        checkPayloadType("Texture");
+
+        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Texture"))
+        {
+            uuid64_t textureID = *(uuid64_t*)payload->Data;
+            textureIndex = mResourceManager->getTextureIndex(textureID);
+            return true;
+        }
+
+        ImGui::EndDragDropTarget();
+    }
+
+    return false;
+}
+
+std::optional<uuid64_t> Editor::textureCombo(uuid64_t selectedTextureID)
+{
+    for (const auto& [textureID, textureName] : mResourceManager->mTextureNames)
+    {
+        bool selected = selectedTextureID == textureID;
+
+        if (ImGui::Selectable(textureName.c_str(), selected))
+            return textureID;
+    }
+
+    return std::nullopt;
 }

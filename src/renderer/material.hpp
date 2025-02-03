@@ -18,11 +18,11 @@ enum class MatTexType
 
 struct Material
 {
-    alignas(4) uint32_t baseColorTexIndex;
-    alignas(4) uint32_t metallicRoughnessTexIndex;
-    alignas(4) uint32_t normalTexIndex;
-    alignas(4) uint32_t aoTexIndex;
-    alignas(4) uint32_t emissionTexIndex;
+    alignas(4) index_t baseColorTexIndex;
+    alignas(4) index_t metallicRoughnessTexIndex;
+    alignas(4) index_t normalTexIndex;
+    alignas(4) index_t aoTexIndex;
+    alignas(4) index_t emissionTexIndex;
     alignas(16) glm::vec4 baseColorFactor;
     alignas(16) glm::vec4 emissionFactor;
     alignas(4) float metallicFactor;
@@ -32,10 +32,10 @@ struct Material
     alignas(8) glm::vec2 offset;
 };
 
-inline constexpr uint32_t DefaultBaseColorTexIndex = 0;
-inline constexpr uint32_t DefaultMetallicRoughnessTexIndex = 1;
-inline constexpr uint32_t DefaultNormalTexIndex = 2;
-inline constexpr uint32_t DefaultAoTexIndex = 3;
-inline constexpr uint32_t DefaultEmissionTexIndex = 4;
+inline constexpr index_t DefaultBaseColorTexIndex = 0;
+inline constexpr index_t DefaultMetallicRoughnessTexIndex = 1;
+inline constexpr index_t DefaultNormalTexIndex = 2;
+inline constexpr index_t DefaultAoTexIndex = 3;
+inline constexpr index_t DefaultEmissionTexIndex = 4;
 
 #endif //OPENGLRENDERINGENGINE_MATERIAL_HPP

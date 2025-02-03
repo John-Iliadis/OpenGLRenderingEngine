@@ -30,7 +30,12 @@ public:
     std::shared_ptr<Model> getModel(uuid64_t id);
     std::shared_ptr<InstancedMesh> getMesh(uuid64_t id);
     std::shared_ptr<Texture> getTexture(uuid64_t id);
-    uint32_t getMatIndex(uuid64_t id);
+    std::shared_ptr<Texture2D> getTextureFromIndex(index_t texIndex);
+    index_t getMatIndex(uuid64_t id);
+    index_t getTextureIndex(uuid64_t id);
+    uuid64_t getTexIDFromIndex(index_t texIndex);
+
+    void updateMaterial(index_t materialIndex);
 
     void deleteModel(uuid64_t id);
     void deleteTexture(uuid64_t id);
@@ -69,11 +74,11 @@ private:
     std::unordered_map<uuid64_t, std::string> mTextureNames;
     std::unordered_map<uuid64_t, std::filesystem::path> mTexturePaths;
     std::unordered_map<uuid64_t, gpu_tex_handle64_t> mBindlessTextureMap;
-    std::vector<gpu_tex_handle64_t> mBindlessTextures;
+    std::vector<gpu_tex_handle64_t> mBindlessTextureArray;
     ShaderBuffer mBindlessTextureSSBO;
 
     // All materials
-    std::unordered_map<uuid64_t, uint32_t> mMaterials;
+    std::unordered_map<uuid64_t, index_t> mMaterials;
     std::map<uuid64_t, std::string> mMaterialNames;
     std::vector<Material> mMaterialArray;
     ShaderBuffer mMaterialsSSBO;

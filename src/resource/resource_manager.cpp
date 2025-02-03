@@ -39,7 +39,7 @@ ResourceManager::ResourceManager()
 
 ResourceManager::~ResourceManager()
 {
-    for (gpu_tex_handle64_t gpuTextureHandle : mBindlessTextures)
+    for (gpu_tex_handle64_t gpuTextureHandle : mBindlessTextureArray)
         glMakeTextureHandleNonResidentARB(gpuTextureHandle);
 }
 
@@ -153,9 +153,25 @@ std::shared_ptr<Texture> ResourceManager::getTexture(uuid64_t id)
     return mTextures.at(id);
 }
 
-uint32_t ResourceManager::getMatIndex(uuid64_t id)
+std::shared_ptr<Texture2D> ResourceManager::getTextureFromIndex(index_t texIndex)
+{
+    gpu_tex_handle64_t gpuTexHandle = mBindlessTextureArray.at(texIndex);
+
+    for (const auto& [texID, gpuTexHandle_] : mBindlessTextureMap)
+        if (gpuTexHandle_ == gpuTexHandle)
+            return mTextures.at(texID);
+
+    return nullptr;
+}
+
+index_t ResourceManager::getMatIndex(uuid64_t id)
 {
     return mMaterials.at(id);
+}
+
+void ResourceManager::updateMaterial(index_t materialIndex)
+{
+    mMaterialsSSBO.update(materialIndex * sizeof(Material), sizeof(Material), &mMaterialArray.at(materialIndex));
 }
 
 void ResourceManager::addModel(std::shared_ptr<LoadedModelData> modelData)
@@ -211,12 +227,12 @@ std::unordered_map<index_t, uint32_t> ResourceManager::addTextures(std::shared_p
 
         gpu_tex_handle64_t gpuTexHandle = makeBindless(texture->id());
         mBindlessTextureMap.emplace(textureID, gpuTexHandle);
-        mBindlessTextures.push_back(gpuTexHandle);
+        mBindlessTextureArray.push_back(gpuTexHandle);
 
-        loadedTextureIndexToResourceIndex.emplace(i, mBindlessTextures.size() - 1);
+        loadedTextureIndexToResourceIndex.emplace(i, mBindlessTextureArray.size() - 1);
     }
 
-    mBindlessTextureSSBO.update(0, mBindlessTextures.size() * sizeof(gpu_tex_handle64_t), mBindlessTextures.data());
+    mBindlessTextureSSBO.update(0, mBindlessTextureArray.size() * sizeof(gpu_tex_handle64_t), mBindlessTextureArray.data());
 
     return loadedTextureIndexToResourceIndex;
 }
@@ -231,11 +247,18 @@ std::unordered_map<std::string, uuid64_t> ResourceManager::addMaterials(std::sha
         const auto& loadedMaterial = modelData->materials.at(i);
 
         Material material {
+            .baseColorTexIndex = DefaultBaseColorTexIndex,
+            .metallicRoughnessTexIndex = DefaultMetallicRoughnessTexIndex,
+            .normalTexIndex = DefaultNormalTexIndex,
+            .aoTexIndex = DefaultNormalTexIndex,
+            .emissionTexIndex = DefaultEmissionTexIndex,
             .baseColorFactor = loadedMaterial.baseColorFactor,
             .emissionFactor = loadedMaterial.emissionColorFactor,
             .metallicFactor = loadedMaterial.metallicFactor,
             .roughnessFactor = loadedMaterial.roughnessFactor,
-            .occlusionFactor = loadedMaterial.occlusionFactor
+            .occlusionFactor = loadedMaterial.occlusionFactor,
+            .tiling = glm::vec2(1.f),
+            .offset = glm::vec2(0.f)
         };
 
         if (loadedMaterial.baseColorTexIndex != -1)
@@ -245,22 +268,22 @@ std::unordered_map<std::string, uuid64_t> ResourceManager::addMaterials(std::sha
 
         if (loadedMaterial.metallicRoughnessTexIndex != -1)
         {
-            material.baseColorTexIndex = loadedTextureIndexToResourceIndex.at(modelData->getTextureIndex(loadedMaterial.baseColorTexIndex));
+            material.metallicRoughnessTexIndex = loadedTextureIndexToResourceIndex.at(modelData->getTextureIndex(loadedMaterial.metallicRoughnessTexIndex));
         }
 
-        if (loadedMaterial.baseColorTexIndex != -1)
+        if (loadedMaterial.normalTexIndex != -1)
         {
-            material.baseColorTexIndex = loadedTextureIndexToResourceIndex.at(modelData->getTextureIndex(loadedMaterial.baseColorTexIndex));
+            material.normalTexIndex = loadedTextureIndexToResourceIndex.at(modelData->getTextureIndex(loadedMaterial.normalTexIndex));
         }
 
-        if (loadedMaterial.baseColorTexIndex != -1)
+        if (loadedMaterial.aoTexIndex != -1)
         {
-            material.baseColorTexIndex = loadedTextureIndexToResourceIndex.at(modelData->getTextureIndex(loadedMaterial.baseColorTexIndex));
+            material.aoTexIndex = loadedTextureIndexToResourceIndex.at(modelData->getTextureIndex(loadedMaterial.aoTexIndex));
         }
 
-        if (loadedMaterial.baseColorTexIndex != -1)
+        if (loadedMaterial.emissionTexIndex != -1)
         {
-            material.baseColorTexIndex = loadedTextureIndexToResourceIndex.at(modelData->getTextureIndex(loadedMaterial.baseColorTexIndex));
+            material.emissionTexIndex = loadedTextureIndexToResourceIndex.at(modelData->getTextureIndex(loadedMaterial.emissionTexIndex));
         }
 
         uuid64_t materialID = UUIDRegistry::generateMaterialID();
@@ -337,21 +360,21 @@ void ResourceManager::deleteTexture(uuid64_t id)
     mBindlessTextureMap.erase(id);
 
     // make bindless texture non resident
-    glMakeTextureHandleNonResidentARB(mBindlessTextures.at(removeIndex));
+    glMakeTextureHandleNonResidentARB(mBindlessTextureArray.at(removeIndex));
 
     // remove bindless texture handle
     std::optional<index_t> transferIndex;
-    if (removeIndex != mBindlessTextures.size() - 1)
+    if (removeIndex != mBindlessTextureArray.size() - 1)
     {
-        index_t lastIndex = mBindlessTextures.size() - 1;
-        std::swap(mBindlessTextures.at(lastIndex), mBindlessTextures.at(removeIndex));
+        index_t lastIndex = mBindlessTextureArray.size() - 1;
+        std::swap(mBindlessTextureArray.at(lastIndex), mBindlessTextureArray.at(removeIndex));
         transferIndex = lastIndex;
     }
 
-    mBindlessTextures.pop_back();
+    mBindlessTextureArray.pop_back();
 
     // update bindless texture ssbo
-    mBindlessTextureSSBO.update(0, mBindlessTextures.size() * sizeof(gpu_tex_handle64_t), mBindlessTextures.data());
+    mBindlessTextureSSBO.update(0, mBindlessTextureArray.size() * sizeof(gpu_tex_handle64_t), mBindlessTextureArray.data());
 
     // send message
     SNS::publishMessage(Topic::Type::SceneGraph, Message::create<Message::TextureDeleted>(id, removeIndex, transferIndex));
@@ -437,13 +460,13 @@ void ResourceManager::loadDefaultTextures()
     mBindlessTextureMap.emplace(aoID, aoTexHandle);
     mBindlessTextureMap.emplace(emissionID, emissionTexHandle);
 
-    mBindlessTextures.push_back(baseColorTexHandle);
-    mBindlessTextures.push_back(metallicRoughnessTexHandle);
-    mBindlessTextures.push_back(normalTexHandle);
-    mBindlessTextures.push_back(aoTexHandle);
-    mBindlessTextures.push_back(emissionTexHandle);
+    mBindlessTextureArray.push_back(baseColorTexHandle);
+    mBindlessTextureArray.push_back(metallicRoughnessTexHandle);
+    mBindlessTextureArray.push_back(normalTexHandle);
+    mBindlessTextureArray.push_back(aoTexHandle);
+    mBindlessTextureArray.push_back(emissionTexHandle);
 
-    mBindlessTextureSSBO.update(0, mBindlessTextures.size() * sizeof(gpu_tex_handle64_t), mBindlessTextures.data());
+    mBindlessTextureSSBO.update(0, mBindlessTextureArray.size() * sizeof(gpu_tex_handle64_t), mBindlessTextureArray.data());
 }
 
 void ResourceManager::loadDefaultMaterial()
@@ -460,7 +483,7 @@ void ResourceManager::loadDefaultMaterial()
         .roughnessFactor = 1.f,
         .occlusionFactor = 1.f,
         .tiling = glm::vec2(1.f),
-        .offset = glm::vec2(1.f)
+        .offset = glm::vec2(0.f)
     };
 
     uuid64_t materialID = UUIDRegistry::getDefMatID();
@@ -484,4 +507,25 @@ std::optional<uuid64_t> ResourceManager::getMeshID(const std::shared_ptr<Instanc
 std::optional<uuid64_t> ResourceManager::getTextureID(const std::shared_ptr<Texture2D>& texture)
 {
     return getTID(mTextures, texture);
+}
+
+index_t ResourceManager::getTextureIndex(uuid64_t id)
+{
+    gpu_tex_handle64_t gpuTexHandle = mBindlessTextureMap.at(id);
+
+    for (index_t i = 0; i < mBindlessTextureArray.size(); ++i)
+        if (gpuTexHandle == mBindlessTextureArray.at(i))
+            return i;
+    return -1;
+}
+
+uuid64_t ResourceManager::getTexIDFromIndex(index_t texIndex)
+{
+    gpu_tex_handle64_t gpuTexHandle = mBindlessTextureArray.at(texIndex);
+
+    for (const auto& [textureID, gpuTexHandle_] : mBindlessTextureMap)
+        if (gpuTexHandle == gpuTexHandle_)
+            return textureID;
+
+    return -1;
 }
