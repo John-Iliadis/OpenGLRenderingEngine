@@ -46,6 +46,7 @@ private:
     void modelInspector(uuid64_t modelID);
     void materialInspector(uuid64_t materialID);
     bool materialTextureInspector(index_t& textureIndex, std::string label);
+    void textureInspector(uuid64_t textureID);
 
     void sceneNodeRecursive(SceneNode* node);
     void checkPayloadType(const char* type);

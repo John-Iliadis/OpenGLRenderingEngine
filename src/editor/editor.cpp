@@ -425,7 +425,7 @@ void Editor::checkPayloadType(const char *type)
 
 void Editor::inspectorPanel()
 {
-    ImGui::Begin("Inspector", &mShowInspectorPanel);
+    ImGui::Begin("Inspector", &mShowInspectorPanel, ImGuiWindowFlags_NoScrollbar);
 
     if (auto objectType = UUIDRegistry::getObjectType(mSelectedObjectID))
         if (*objectType == ObjectType::Model)
@@ -434,6 +434,10 @@ void Editor::inspectorPanel()
     if (auto objectType = UUIDRegistry::getObjectType(mSelectedObjectID))
         if (*objectType == ObjectType::Material)
             materialInspector(mSelectedObjectID);
+
+    if (auto objectType = UUIDRegistry::getObjectType(mSelectedObjectID))
+        if (*objectType == ObjectType::Texture)
+            textureInspector(mSelectedObjectID);
 
     ImGui::End();
 }
@@ -460,7 +464,7 @@ void Editor::modelInspector(uuid64_t modelID)
 {
     auto model = mResourceManager->getModel(modelID);
 
-    ImGui::Text("Asset type: Model");
+    ImGui::Text("Asset Type: Model");
     ImGui::Text("Name: %s", mResourceManager->mModelNames.at(modelID).c_str());
     ImGui::Separator();
 
@@ -501,7 +505,7 @@ void Editor::materialInspector(uuid64_t materialID)
     index_t matIndex = mResourceManager->getMatIndex(materialID);
     Material& material = mResourceManager->mMaterialArray.at(matIndex);
 
-    ImGui::Text("Asset type: Material");
+    ImGui::Text("Asset Type: Material");
     ImGui::Text("Name: %s", mResourceManager->mMaterialNames.at(materialID).c_str());
     ImGui::Separator();
 
@@ -666,4 +670,30 @@ std::optional<uuid64_t> Editor::textureCombo(uuid64_t selectedTextureID)
     }
 
     return std::nullopt;
+}
+
+void Editor::textureInspector(uuid64_t textureID)
+{
+    auto texture = mResourceManager->getTexture(textureID);
+    const ImTextureID imTextureId = (ImTextureID)(intptr_t)texture->id();
+    const ImVec2 textureSize(texture->width(), texture->height());
+
+    ImGui::Text("Asset Type: Texture");
+    ImGui::Text("Name: %s", mResourceManager->mTextureNames.at(textureID).c_str());
+
+    ImGui::SeparatorText("Texture Info");
+
+    ImGui::Text("Format: %s", toStr(texture->format()));
+    ImGui::Text("Data Type: %s", toStr(texture->dataType()));
+    ImGui::Text("Wrap Mode: %s", toStr(texture->wrapMode()));
+    ImGui::Text("Filter Mode: %s", toStr(texture->filterMode()));
+    ImGui::Text("Size: %dx%d", (int)textureSize.x, (int)textureSize.y);
+
+    ImGui::SeparatorText("Preview");
+
+    float windowWidth = ImGui::GetContentRegionAvail().x;
+    float newHeight = (windowWidth / textureSize.x) * textureSize.y;
+    float xPadding = (ImGui::GetContentRegionAvail().x - windowWidth) * 0.5f;
+    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + xPadding);
+    ImGui::Image(imTextureId, ImVec2(windowWidth, newHeight));
 }

@@ -4,6 +4,14 @@
 
 #include "texture.hpp"
 
+#define ENUM_CASE(EnumType, value) \
+    case EnumType::value: return #value;
+
+#define MAP_TEXTURE_FORMAT(str, enumVal) if (strcmp(str, #enumVal) == 0) return TextureFormat::enumVal;
+#define MAP_TEXTURE_DATATYPE(str, enumVal) if (strcmp(str, #enumVal) == 0) return TextureDataType::enumVal;
+#define MAP_TEXTURE_WRAP(str, enumVal) if (strcmp(str, #enumVal) == 0) return TextureWrap::enumVal;
+#define MAP_TEXTURE_FILTER(str, enumVal) if (strcmp(str, #enumVal) == 0) return TextureFilter::enumVal;
+
 GLenum toGLenumFormat(TextureFormat format)
 {
     switch (format)
@@ -80,6 +88,101 @@ GLenum toGLenumMagFilter(TextureFilter filterMode)
         case TextureFilter::Anisotropic: return GL_LINEAR;
         default: assert(false);
     }
+}
+
+const char* toStr(TextureFormat format)
+{
+    switch (format)
+    {
+        ENUM_CASE(TextureFormat, R8)
+        ENUM_CASE(TextureFormat, RG8)
+        ENUM_CASE(TextureFormat, RGB8)
+        ENUM_CASE(TextureFormat, RGBA8)
+        ENUM_CASE(TextureFormat, RGB32F)
+        ENUM_CASE(TextureFormat, RGBA32F)
+        ENUM_CASE(TextureFormat, D32)
+        ENUM_CASE(TextureFormat, D24S8)
+        default: return "Unknown";
+    }
+}
+
+const char* toStr(TextureDataType dataType)
+{
+    switch (dataType)
+    {
+        ENUM_CASE(TextureDataType, UINT8)
+        ENUM_CASE(TextureDataType, FLOAT)
+        default: return "Unknown";
+    }
+}
+
+const char* toStr(TextureWrap wrapMode)
+{
+    switch (wrapMode)
+    {
+        ENUM_CASE(TextureWrap, Repeat)
+        ENUM_CASE(TextureWrap, MirroredRepeat)
+        ENUM_CASE(TextureWrap, ClampToEdge)
+        ENUM_CASE(TextureWrap, ClampToBorder)
+        default: return "Unknown";
+    }
+}
+
+const char* toStr(TextureFilter filterMode)
+{
+    switch (filterMode)
+    {
+        ENUM_CASE(TextureFilter, Nearest)
+        ENUM_CASE(TextureFilter, Bilinear)
+        ENUM_CASE(TextureFilter, Trilinear)
+        ENUM_CASE(TextureFilter, Anisotropic)
+        default: return "Unknown";
+    }
+}
+
+TextureFormat getTextureFormat(const char* str)
+{
+    MAP_TEXTURE_FORMAT(str, R8)
+    MAP_TEXTURE_FORMAT(str, RG8)
+    MAP_TEXTURE_FORMAT(str, RGB8)
+    MAP_TEXTURE_FORMAT(str, RGBA8)
+    MAP_TEXTURE_FORMAT(str, RGB32F)
+    MAP_TEXTURE_FORMAT(str, RGBA32F)
+    MAP_TEXTURE_FORMAT(str, D32)
+    MAP_TEXTURE_FORMAT(str, D24S8)
+
+    throw std::invalid_argument("Invalid TextureFormat");
+}
+
+// Function to return the TextureDataType enum from string
+TextureDataType getTextureDataType(const char* str)
+{
+    MAP_TEXTURE_DATATYPE(str, UINT8)
+    MAP_TEXTURE_DATATYPE(str, FLOAT)
+
+    throw std::invalid_argument("Invalid TextureDataType");
+}
+
+// Function to return the TextureWrap enum from string
+TextureWrap getTextureWrap(const char* str)
+{
+    MAP_TEXTURE_WRAP(str, Repeat)
+    MAP_TEXTURE_WRAP(str, MirroredRepeat)
+    MAP_TEXTURE_WRAP(str, ClampToEdge)
+    MAP_TEXTURE_WRAP(str, ClampToBorder)
+
+    throw std::invalid_argument("Invalid TextureWrap");
+}
+
+// Function to return the TextureFilter enum from string
+TextureFilter getTextureFilter(const char* str)
+{
+    MAP_TEXTURE_FILTER(str, Nearest)
+    MAP_TEXTURE_FILTER(str, Bilinear)
+    MAP_TEXTURE_FILTER(str, Trilinear)
+    MAP_TEXTURE_FILTER(str, Anisotropic)
+
+    throw std::invalid_argument("Invalid TextureFilter");
 }
 
 uint32_t calculateMipLevels(int32_t textureWidth, int32_t textureHeight)
@@ -303,6 +406,31 @@ int32_t Texture::width() const
 int32_t Texture::height() const
 {
     return mSpecification.height;
+}
+
+TextureFormat Texture::format() const
+{
+    return mSpecification.format;
+}
+
+TextureDataType Texture::dataType() const
+{
+    return mSpecification.dataType;
+}
+
+TextureWrap Texture::wrapMode() const
+{
+    return mSpecification.wrapMode;
+}
+
+TextureFilter Texture::filterMode() const
+{
+    return mSpecification.filterMode;
+}
+
+bool Texture::mips() const
+{
+    return mSpecification.generateMipMaps;
 }
 
 // -- Texture2D -- //

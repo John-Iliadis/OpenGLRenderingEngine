@@ -62,6 +62,16 @@ GLenum toGLenum(TextureWrap wrapMode);
 GLenum toGLenumMinFilter(TextureFilter filterMode);
 GLenum toGLenumMagFilter(TextureFilter filterMode);
 
+const char* toStr(TextureFormat format);
+const char* toStr(TextureDataType dataType);
+const char* toStr(TextureWrap wrapMode);
+const char* toStr(TextureFilter filterMode);
+
+TextureFormat getTextureFormat(const char* str);
+TextureDataType getTextureDataType(const char* str);
+TextureWrap getTextureWrap(const char* str);
+TextureFilter getTextureFilter(const char* str);
+
 uint32_t calculateMipLevels(int32_t textureWidth, int32_t textureHeight);
 
 int32_t getRequiredComponents(TextureFormat format);
@@ -120,6 +130,11 @@ public:
     uint32_t id() const;
     int32_t width() const;
     int32_t height() const;
+    TextureFormat format() const;
+    TextureDataType dataType() const;
+    TextureWrap wrapMode() const;
+    TextureFilter filterMode() const;
+    bool mips() const;
 
 protected:
     uint32_t mRendererID;
